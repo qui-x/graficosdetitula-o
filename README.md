@@ -36,3 +36,15 @@ Este editor não simula a titulação, não adiciona gotas e não calcula equiva
 
 - `index.html` — aplicação completa, com CSS e JavaScript incorporados.
 - `dados-exemplo.csv` — conjunto pequeno de dados para testar a importação.
+
+## Responsividade e apresentação
+
+A interface incorpora os princípios mobile usados no SIAB: controles com alvos de toque de pelo menos 44 px, espaçamento compacto, tipografia ajustada para telas pequenas, margem segura no topo para dispositivos móveis, foco visível e respeito à preferência por movimento reduzido.
+
+- Em telas estreitas, a tabela muda para cartões com campos rotulados; isso evita que a página inteira dependa de rolagem horizontal.
+- Os controles de ação se organizam em duas colunas, e o painel de personalização começa recolhido para manter a área de trabalho leve.
+- O gráfico SVG adapta sua dimensão à largura do painel e é redesenhado quando a janela muda de tamanho.
+- Os campos de entrada em dispositivos móveis usam fonte de 16 px para evitar zoom automático em navegadores móveis.
+
+A atualização foi verificada com teste de DOM simulado para uma largura de 330 px, renderização dos dois gráficos, título personalizado e escala com passos de 0,001. A verificação não substitui um teste visual em aparelhos e navegadores reais.
+
