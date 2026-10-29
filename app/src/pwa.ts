@@ -18,6 +18,14 @@ function announce(message: string): void {
   if (statusEl) statusEl.textContent = message;
 }
 
+const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+if (standaloneQuery.matches) {
+  if (installButton instanceof HTMLButtonElement) installButton.hidden = true;
+}
+standaloneQuery.addEventListener?.("change", (event) => {
+  if (installButton instanceof HTMLButtonElement && event.matches) installButton.hidden = true;
+});
+
 window.addEventListener("beforeinstallprompt", (event: Event) => {
   event.preventDefault();
   deferredPrompt = event as DeferredInstallPrompt;
@@ -29,7 +37,19 @@ window.addEventListener("beforeinstallprompt", (event: Event) => {
 });
 
 installButton?.addEventListener("click", async () => {
-  if (!(installButton instanceof HTMLButtonElement) || !deferredPrompt) return;
+  if (!(installButton instanceof HTMLButtonElement)) return;
+  if (!deferredPrompt) {
+    const userAgent = navigator.userAgent || "";
+    const isAppleTouchDevice =
+      /iPad|iPhone|iPod/i.test(userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    announce(
+      isAppleTouchDevice
+        ? "No Safari, toque Compartilhar e escolha Adicionar à Tela de Início."
+        : "Abra o menu do navegador e procure Instalar app ou Adicionar à tela inicial, se disponível."
+    );
+    return;
+  }
   const promptEvent = deferredPrompt;
   deferredPrompt = null;
   installButton.disabled = true;
