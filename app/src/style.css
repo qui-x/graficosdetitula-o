@@ -567,6 +567,11 @@
       .scope, .toolbar, .data-toolbar, .chart-controls, .customization, .series-color-panel, .remove-btn, .page-note details, .a11y-menu, .skip-link, #colorblindOverlay, .a11y-filters, input[type="file"], .validation, .toolbar-meta, .action-menu, .section-disclosure, .keyboard-help, .draft-status { display: none !important; }
       .workspace-panel > .panel-summary { display: none !important; }
       .workspace-panel:not([open]) > :not(summary) { display: block !important; }
+      .workspace-panel:not([open]) > .data-toolbar,
+      .workspace-panel:not([open]) > .chart-controls,
+      .workspace-panel:not([open]) > .customization,
+      .workspace-panel:not([open]) > .validation,
+      .workspace-panel:not([open]) > .section-disclosure { display: none !important; }
       .workspace-panel { display: block; overflow: visible; }
       .layout { display: block; }
       .panel { margin-bottom: 0.8rem; break-inside: avoid; border-color: #bbb; background: #fff; }
