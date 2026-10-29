@@ -25,7 +25,7 @@ export default defineConfig({
         scope: "/graficosdetitula-o/",
         display: "standalone",
         orientation: "any",
-        background_color: "#edf3f8",
+        background_color: "#0b1420",
         theme_color: "#101d2b",
         icons: [
           {
