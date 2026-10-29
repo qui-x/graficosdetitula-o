@@ -33,6 +33,19 @@ import "./pwa";
       var settingsWarnings = [];
       var seriesColors = {};
       var colorNamesSignature = "";
+      var undoButton = document.getElementById("undo-action");
+      var redoButton = document.getElementById("redo-action");
+      var draftStatusEl = document.getElementById("draft-status");
+      var draftStatusTextEl = document.getElementById("draft-status-text");
+      var historyStatusEl = document.getElementById("history-status");
+      var undoStack = [];
+      var redoStack = [];
+      var HISTORY_LIMIT = 100;
+      var pendingUndoSnapshot = null;
+      var historyTimer = null;
+      var committedSnapshot = null;
+      var PANEL_STORAGE_KEY = "graficos_investigacao_panels_v1";
+      var PANEL_IDS = ["data-panel", "chart-panel", "series-colors-details", "customization", "csv-import-help"];
       var SETTINGS_IDS = [
         "cfg-curve-title", "cfg-curve-x-label", "cfg-curve-y-label",
         "cfg-curve-x-min", "cfg-curve-x-max", "cfg-curve-x-step",
@@ -401,6 +414,159 @@ import "./pwa";
         });
         return values;
       }
+      function cloneState(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+      function captureEditorState() {
+        return {
+          points: points.map(function (point) {
+            return { series: String(point.series || ""), volume: String(point.volume || ""), ph: String(point.ph || "") };
+          }),
+          currentView: currentView,
+          seriesColors: Object.assign({}, seriesColors),
+          settings: collectSettings()
+        };
+      }
+      function snapshotKey(snapshot) {
+        return JSON.stringify(snapshot);
+      }
+      function syncHistoryControls() {
+        if (undoButton) undoButton.disabled = undoStack.length === 0 && !pendingUndoSnapshot;
+        if (redoButton) redoButton.disabled = redoStack.length === 0;
+        if (historyStatusEl) {
+          historyStatusEl.textContent = pendingUndoSnapshot || undoStack.length
+            ? "Há alterações disponíveis no histórico."
+            : "Histórico de alterações vazio.";
+        }
+      }
+      function pushUndoSnapshot(stack, snapshot) {
+        var last = stack.length ? stack[stack.length - 1] : null;
+        if (last && snapshotKey(last) === snapshotKey(snapshot)) return;
+        stack.push(cloneState(snapshot));
+        if (stack.length > HISTORY_LIMIT) stack.splice(0, stack.length - HISTORY_LIMIT);
+      }
+      function flushHistoryCheckpoint() {
+        if (historyTimer !== null) {
+          window.clearTimeout(historyTimer);
+          historyTimer = null;
+        }
+        if (!pendingUndoSnapshot) {
+          syncHistoryControls();
+          return;
+        }
+        var current = captureEditorState();
+        if (snapshotKey(pendingUndoSnapshot) !== snapshotKey(current)) {
+          pushUndoSnapshot(undoStack, pendingUndoSnapshot);
+          redoStack = [];
+        }
+        pendingUndoSnapshot = null;
+        committedSnapshot = cloneState(current);
+        syncHistoryControls();
+      }
+      function scheduleHistoryCheckpoint() {
+        if (!pendingUndoSnapshot) pendingUndoSnapshot = cloneState(committedSnapshot || captureEditorState());
+        if (historyTimer !== null) window.clearTimeout(historyTimer);
+        historyTimer = window.setTimeout(flushHistoryCheckpoint, 650);
+        syncHistoryControls();
+      }
+      function recordUndoCheckpoint() {
+        flushHistoryCheckpoint();
+        pushUndoSnapshot(undoStack, captureEditorState());
+        redoStack = [];
+        syncHistoryControls();
+      }
+      function settleHistoryBaseline() {
+        if (historyTimer !== null) window.clearTimeout(historyTimer);
+        historyTimer = null;
+        pendingUndoSnapshot = null;
+        committedSnapshot = cloneState(captureEditorState());
+        syncHistoryControls();
+      }
+      function applyEditorState(snapshot) {
+        points = cloneState(snapshot.points || []);
+        if (!points.length) points = [{ series: "Série A", volume: "", ph: "" }];
+        currentView = snapshot.currentView === "derivative" ? "derivative" : "curve";
+        seriesColors = Object.assign({}, snapshot.seriesColors || {});
+        SETTINGS_IDS.forEach(function (id) {
+          if (!Object.prototype.hasOwnProperty.call(snapshot.settings || {}, id)) return;
+          var element = document.getElementById(id);
+          if (!element) return;
+          var value = snapshot.settings[id];
+          if (element.type === "checkbox") element.checked = value === true;
+          else element.value = String(value == null ? "" : value);
+        });
+        colorNamesSignature = "";
+        document.querySelectorAll("[data-view]").forEach(function (tab) {
+          tab.setAttribute("aria-selected", tab.getAttribute("data-view") === currentView ? "true" : "false");
+        });
+        renderRows();
+        renderAll();
+        settleHistoryBaseline();
+      }
+      function undoChange() {
+        flushHistoryCheckpoint();
+        if (!undoStack.length) return;
+        var current = captureEditorState();
+        var previous = undoStack.pop();
+        pushUndoSnapshot(redoStack, current);
+        applyEditorState(previous);
+        syncHistoryControls();
+      }
+      function redoChange() {
+        flushHistoryCheckpoint();
+        if (!redoStack.length) return;
+        var current = captureEditorState();
+        var next = redoStack.pop();
+        pushUndoSnapshot(undoStack, current);
+        applyEditorState(next);
+        syncHistoryControls();
+      }
+      function setDraftStatus(message, state) {
+        if (draftStatusEl) draftStatusEl.dataset.state = state || "saved";
+        if (draftStatusTextEl) draftStatusTextEl.textContent = message;
+      }
+      function savePanelStates() {
+        try {
+          var state = {};
+          PANEL_IDS.forEach(function (id) {
+            var panel = document.getElementById(id);
+            if (panel instanceof HTMLDetailsElement) state[id] = panel.open;
+          });
+          localStorage.setItem(PANEL_STORAGE_KEY, JSON.stringify(state));
+        } catch (error) {
+          // As áreas recolhíveis continuam funcionais sem armazenamento de preferências.
+        }
+      }
+      function restorePanelStates() {
+        try {
+          var saved = JSON.parse(localStorage.getItem(PANEL_STORAGE_KEY) || "{}");
+          PANEL_IDS.forEach(function (id) {
+            var panel = document.getElementById(id);
+            if (panel instanceof HTMLDetailsElement && typeof saved[id] === "boolean") panel.open = saved[id];
+          });
+        } catch (error) {
+          // Mantém os estados padrão declarados no HTML.
+        }
+      }
+      function setupPanelDisclosures() {
+        document.querySelectorAll("details[data-persist-open]").forEach(function (panel) {
+          panel.addEventListener("toggle", function () {
+            savePanelStates();
+            if (panel.matches("[data-workspace-panel]")) {
+              window.requestAnimationFrame(function () {
+                updateChartDimensions();
+                renderAll();
+              });
+            }
+          });
+        });
+        document.addEventListener("click", function (event) {
+          var target = event.target;
+          document.querySelectorAll(".action-menu[open]").forEach(function (menu) {
+            if (target instanceof Node && !menu.contains(target)) menu.open = false;
+          });
+        });
+      }
       function persistDraft() {
         if (draftSaveTimer !== null) {
           window.clearTimeout(draftSaveTimer);
@@ -421,12 +587,15 @@ import "./pwa";
             settings: collectSettings()
           };
           localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+          var savedAt = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
+          setDraftStatus("Salvo neste dispositivo · " + savedAt, "saved");
         } catch (error) {
-          // A ferramenta continua funcional mesmo quando o navegador bloqueia o armazenamento local.
+          setDraftStatus("Não foi possível salvar localmente", "error");
         }
       }
       function scheduleDraftSave() {
         if (draftSaveTimer !== null) window.clearTimeout(draftSaveTimer);
+        setDraftStatus("Alterações pendentes…", "pending");
         draftSaveTimer = window.setTimeout(persistDraft, 250);
       }
       function restoreDraft() {
@@ -474,10 +643,12 @@ import "./pwa";
         }
       }
       function addPoint() {
+        recordUndoCheckpoint();
         var series = points.length ? String(points[points.length - 1].series || "").trim() : "";
         points.push({ series: series || "Série A", volume: "", ph: "" });
         renderRows();
         renderAll();
+        settleHistoryBaseline();
         var target = document.getElementById("volume-" + (points.length - 1));
         if (target) target.focus();
       }
@@ -548,11 +719,15 @@ import "./pwa";
           imported.push({ series: String(series || "Série A").trim() || "Série A", volume: String(volume || "").trim(), ph: String(ph || "").trim() });
         });
         if (!imported.length) throw new Error("Não encontrei linhas com volume e pH. Verifique o cabeçalho e use ponto e vírgula para separar as colunas.");
+        recordUndoCheckpoint();
         points = imported;
         renderRows();
         renderAll();
+        settleHistoryBaseline();
       }
       document.getElementById("add-point").addEventListener("click", addPoint);
+      undoButton.addEventListener("click", undoChange);
+      redoButton.addEventListener("click", redoChange);
       document.getElementById("import-button").addEventListener("click", function () { document.getElementById("import-file").click(); });
       document.getElementById("import-file").addEventListener("change", function (event) {
         var file = event.target.files && event.target.files[0];
@@ -591,6 +766,7 @@ import "./pwa";
           try {
             var parsed = JSON.parse(String(reader.result || ""));
             if (!parsed || parsed.format !== "graficos-investigacao-manual-settings-v1" || !parsed.settings) throw new Error("Este arquivo não é uma configuração válida desta ferramenta.");
+            recordUndoCheckpoint();
             SETTINGS_IDS.forEach(function (id) {
               if (!Object.prototype.hasOwnProperty.call(parsed.settings, id)) return;
               var element = document.getElementById(id), value = parsed.settings[id];
@@ -610,6 +786,7 @@ import "./pwa";
               tab.setAttribute("aria-selected", tab.getAttribute("data-view") === currentView ? "true" : "false");
             });
             renderAll();
+            settleHistoryBaseline();
           } catch (error) {
             window.alert(error.message || "Não foi possível carregar as configurações.");
           }
@@ -620,11 +797,14 @@ import "./pwa";
       });
       document.getElementById("clear-data").addEventListener("click", function () {
         if (!window.confirm("Limpar todos os pontos digitados?")) return;
+        recordUndoCheckpoint();
         points = [{ series: "Série A", volume: "", ph: "" }];
         renderRows();
         renderAll();
+        settleHistoryBaseline();
       });
       document.getElementById("load-example").addEventListener("click", function () {
+        recordUndoCheckpoint();
         points = [
           { series: "Exemplo", volume: "0", ph: "6,8" },
           { series: "Exemplo", volume: "1", ph: "6,9" },
@@ -634,6 +814,7 @@ import "./pwa";
         ];
         renderRows();
         renderAll();
+        settleHistoryBaseline();
       });
       document.getElementById("print-chart").addEventListener("click", function () { window.print(); });
       downloadSvgButton.addEventListener("click", function () {
@@ -645,22 +826,27 @@ import "./pwa";
       });
       document.querySelectorAll("[data-view]").forEach(function (button) {
         button.addEventListener("click", function () {
+          flushHistoryCheckpoint();
           currentView = button.getAttribute("data-view");
           document.querySelectorAll("[data-view]").forEach(function (tab) {
             tab.setAttribute("aria-selected", tab === button ? "true" : "false");
           });
           renderAll();
+          settleHistoryBaseline();
         });
       });
       document.getElementById("customization").addEventListener("input", function () {
+        scheduleHistoryCheckpoint();
         renderAll();
       });
       document.getElementById("customization").addEventListener("change", function () {
+        scheduleHistoryCheckpoint();
         renderAll();
       });
       seriesColorsEl.addEventListener("input", function (event) {
         var input = event.target.closest("input[data-series-color]");
         if (!input) return;
+        scheduleHistoryCheckpoint();
         seriesColors[input.getAttribute("data-series-color")] = input.value;
         renderAll();
       });
@@ -676,6 +862,7 @@ import "./pwa";
         var row = input.closest("tr");
         var index = Number(row && row.getAttribute("data-index"));
         if (!Number.isInteger(index) || !points[index]) return;
+        scheduleHistoryCheckpoint();
         points[index][input.getAttribute("data-field")] = input.value;
         renderAll();
       });
@@ -684,14 +871,65 @@ import "./pwa";
         if (!button) return;
         var index = Number(button.getAttribute("data-remove"));
         if (!Number.isInteger(index)) return;
+        recordUndoCheckpoint();
         points.splice(index, 1);
         if (!points.length) points.push({ series: "Série A", volume: "", ph: "" });
         renderRows();
         renderAll();
+        settleHistoryBaseline();
       });
+      setupPanelDisclosures();
+      restorePanelStates();
       restoreDraft();
       renderRows();
       renderAll();
-      window.addEventListener("pagehide", persistDraft); 
+      settleHistoryBaseline();
+      window.addEventListener("pagehide", persistDraft);
+      window.addEventListener("blur", flushHistoryCheckpoint);
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "hidden") {
+          flushHistoryCheckpoint();
+          persistDraft();
+        }
+      });
+      window.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          var closedAny = false;
+          document.querySelectorAll(".action-menu[open], #a11y-menu[open]").forEach(function (menu) {
+            menu.open = false;
+            closedAny = true;
+            var summary = menu.querySelector("summary");
+            if (summary) summary.focus();
+          });
+          if (closedAny) event.stopPropagation();
+          return;
+        }
+        var modifier = event.ctrlKey || event.metaKey;
+        if (!modifier) return;
+        var key = event.key.toLowerCase();
+        var target = event.target;
+        var isEditingText = target instanceof HTMLElement &&
+          target.matches("input:not([type=checkbox]):not([type=button]):not([type=color]), textarea, select, [contenteditable=true]");
+        if ((key === "z" || key === "y") && isEditingText) return;
+        if ((key === "z" && event.shiftKey) || key === "y") {
+          event.preventDefault();
+          redoChange();
+          return;
+        }
+        if (key === "z") {
+          event.preventDefault();
+          undoChange();
+          return;
+        }
+        if (key === "enter" && !event.shiftKey) {
+          event.preventDefault();
+          addPoint();
+          return;
+        }
+        if (key === "e" && event.shiftKey) {
+          event.preventDefault();
+          exportCSV();
+        }
+      });
     })();
   
