@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Editor local e independente para inserir leituras manualmente e gerar gráficos de pH por volume e ΔpH/ΔV.">
+  <title>Gráficos de investigação — editor manual</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1420;
+      --panel: #142131;
+      --panel-soft: #192a3c;
+      --line: #2e4257;
+      --text: #eef5fb;
+      --muted: #b2c1d0;
+      --accent: #72d8ef;
+      --accent-strong: #153f55;
+      --danger: #ffb5b5;
+      --radius: 16px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; }
+    button, input { font: inherit; }
+    button {
+      min-height: 44px; padding: 0.58rem 0.85rem; border: 1px solid #486077;
+      border-radius: 10px; background: #1c3044; color: var(--text); cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid var(--accent); outline-offset: 2px;
+    }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #0a1b25; font-weight: 700; }
+    button.quiet { background: transparent; }
+    button.danger { color: var(--danger); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .topbar {
+      padding: 1.2rem clamp(1rem, 3vw, 2rem); border-bottom: 1px solid var(--line);
+      background: #101d2b;
+    }
+    .topbar-inner, main { width: min(1500px, 100%); margin: 0 auto; }
+    .brand { display: flex; align-items: center; gap: 0.9rem; }
+    .brand-mark {
+      flex: 0 0 46px; width: 46px; height: 46px; display: grid; place-items: center;
+      border-radius: 13px; background: #1d4154; color: var(--accent); font-size: 1.45rem; font-weight: 800;
+    }
+    h1 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.7rem); line-height: 1.2; }
+    .subtitle { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.93rem; }
+    .scope {
+      display: inline-flex; margin-top: 0.8rem; padding: 0.25rem 0.65rem;
+      border: 1px solid #3b6676; border-radius: 999px; color: #c8f2fb;
+      font-size: 0.78rem; letter-spacing: 0.015em;
+    }
+    main { padding: clamp(0.8rem, 2vw, 1.5rem); }
+    .layout { display: grid; grid-template-columns: minmax(360px, 0.88fr) minmax(480px, 1.45fr); gap: 1.1rem; align-items: start; }
+    .panel {
+      min-width: 0; overflow: hidden; border: 1px solid var(--line);
+      border-radius: var(--radius); background: var(--panel);
+    }
+    .panel-head { padding: 1rem 1.05rem 0.85rem; border-bottom: 1px solid var(--line); }
+    h2 { margin: 0; font-size: 1.08rem; }
+    h3 { margin: 0; font-size: 0.95rem; }
+    .hint { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.86rem; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.85rem 1rem; }
+    .toolbar button { font-size: 0.88rem; }
+    .table-scroll { max-width: 100%; overflow-x: auto; padding: 0 1rem 1rem; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.86rem; }
+    th { padding: 0.65rem 0.45rem; color: var(--muted); text-align: left; font-size: 0.78rem; font-weight: 650; }
+    td { padding: 0.45rem; border-top: 1px solid var(--line); vertical-align: middle; }
+    td input {
+      width: 100%; min-width: 74px; min-height: 42px; padding: 0.45rem 0.55rem;
+      border: 1px solid #496077; border-radius: 8px; background: #0e1b29; color: var(--text);
+    }
+    td input.series-input { min-width: 102px; }
+    td input[aria-invalid="true"] { border-color: #ff8a8a; }
+    .remove-btn { min-width: 42px; min-height: 42px; padding: 0.2rem; }
+    .data-note { padding: 0 1rem 1rem; color: var(--muted); font-size: 0.82rem; }
+    .validation { margin: 0 1rem 1rem; padding: 0.7rem 0.8rem; border-left: 3px solid #577990; background: #10202f; color: var(--muted); font-size: 0.83rem; }
+    .validation.warn { border-left-color: #e5a45d; color: #ffe0b8; }
+    .chart-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.85rem 1rem; border-bottom: 1px solid var(--line); }
+    .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-right: auto; }
+    .tabs button[aria-selected="true"] { border-color: var(--accent); background: var(--accent-strong); color: #d8f7ff; box-shadow: inset 0 -2px 0 var(--accent); }
+    .customization { padding: 0.85rem 1rem; border-bottom: 1px solid var(--line); }
+    .customization > summary { list-style-position: inside; padding: 0.2rem 0 0.6rem; }
+    .customization-intro { margin: 0 0 0.85rem; color: var(--muted); font-size: 0.82rem; }
+    .custom-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .settings-group { min-width: 0; margin: 0; padding: 0.8rem; border: 1px solid var(--line); border-radius: 12px; }
+    .settings-group legend { padding: 0 0.35rem; font-weight: 700; }
+    .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
+    .setting-field { min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; color: var(--muted); font-size: 0.79rem; }
+    .setting-field.wide { grid-column: 1 / -1; }
+    .setting-field input, .setting-field select { width: 100%; min-width: 0; min-height: 40px; padding: 0.45rem 0.55rem; border: 1px solid #496077; border-radius: 8px; background: #0e1b29; color: var(--text); }
+    .axis-heading { grid-column: 1 / -1; margin: 0.5rem 0 0; color: var(--text); font-size: 0.81rem; }
+    .style-options { display: flex; flex-wrap: wrap; gap: 0.5rem 0.85rem; margin-top: 0.75rem; }
+    .style-options label { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.8rem; }
+    .style-options input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .settings-status { margin: 0.75rem 0 0; padding: 0.65rem 0.75rem; border-left: 3px solid #577990; background: #10202f; color: var(--muted); font-size: 0.8rem; }
+    .settings-status.warn { border-left-color: #e5a45d; color: #ffe0b8; }
+    .series-color-panel { margin: 0 1rem 1rem; padding: 0.7rem 0.8rem; border: 1px solid var(--line); border-radius: 10px; }
+    .series-color-panel legend { padding: 0 0.3rem; color: var(--muted); font-size: 0.83rem; }
+    .series-color-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
+    .series-color-item { min-width: 0; display: flex; align-items: center; gap: 0.55rem; }
+    .series-color-item label { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 0.82rem; }
+    .series-color-item input[type="color"] { width: 44px; height: 38px; padding: 2px; border: 1px solid #496077; border-radius: 8px; background: #0e1b29; cursor: pointer; }
+    .chart-body { padding: 1rem; }
+    .chart-title { margin: 0 0 0.8rem; }
+    .chart-surface {
+      width: 100%; min-width: 0; overflow: hidden; border-radius: 10px;
+      border: 1px solid #d4dee7; background: #fff; color: #223344;
+    }
+    .chart-surface svg { display: block; width: 100%; height: auto; }
+    .empty-state { padding: 2.5rem 1rem; color: #34485b; background: #fff; text-align: center; }
+    .empty-state strong { display: block; margin-bottom: 0.35rem; }
+    .empty-state p { max-width: 38rem; margin: 0 auto; font-size: 0.9rem; }
+    .legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-top: 0.8rem; color: var(--muted); font-size: 0.82rem; }
+    .legend-item { display: inline-flex; align-items: center; gap: 0.45rem; max-width: 100%; }
+    .legend-swatch { width: 18px; height: 4px; flex: 0 0 auto; border-radius: 2px; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-top: 1rem; }
+    .stat { min-width: 0; padding: 0.7rem 0.75rem; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-soft); }
+    .stat-label { display: block; color: var(--muted); font-size: 0.76rem; }
+    .stat-value { display: block; margin-top: 0.15rem; font-weight: 750; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .chart-explanation { margin: 1rem 0 0; color: var(--muted); font-size: 0.86rem; }
+    details { margin-top: 1rem; color: var(--muted); font-size: 0.86rem; }
+    summary { cursor: pointer; color: var(--text); font-weight: 650; }
+    .csv-example { display: block; margin-top: 0.6rem; padding: 0.7rem; overflow-x: auto; border-radius: 8px; background: #0c1825; color: #dceaf5; font-size: 0.8rem; white-space: pre; }
+    .page-note { margin: 1.2rem 0 0; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); font-size: 0.88rem; }
+    .page-note strong { color: var(--text); }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @media (max-width: 1050px) {
+      .layout { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .custom-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 560px) {
+      .settings-grid, .series-color-list { grid-template-columns: minmax(0, 1fr); }
+      main { padding: 0.65rem; }
+      .topbar { padding: 1rem; }
+      .layout { gap: 0.75rem; }
+      .panel-head { padding: 0.9rem; }
+      .toolbar { padding: 0.7rem; }
+      .toolbar button { flex: 1 1 auto; }
+      .table-scroll { padding: 0 0.65rem 0.8rem; }
+      .validation { margin: 0 0.65rem 0.8rem; }
+      .chart-body { padding: 0.65rem; }
+      .stats { grid-template-columns: 1fr; }
+      .chart-controls { padding: 0.65rem; }
+      .tabs { width: 100%; }
+      .tabs button { flex: 1 1 auto; }
+    }
+    @media print {
+      :root { color-scheme: light; --bg: #fff; --panel: #fff; --panel-soft: #fff; --line: #cbd3da; --text: #111; --muted: #333; }
+      body { background: #fff; color: #111; }
+      .topbar { background: #fff; color: #111; border-bottom: 1px solid #ccc; }
+      .scope, .toolbar, .chart-controls, .customization, .series-color-panel, .remove-btn, .page-note details, input[type="file"], .validation { display: none !important; }
+      .layout { display: block; }
+      .panel { margin-bottom: 0.8rem; break-inside: avoid; border-color: #bbb; background: #fff; }
+      .panel-head { border-color: #ccc; }
+      .hint, .subtitle, .data-note, .chart-explanation, .legend, .stat-label { color: #333; }
+      td input { min-height: 28px; padding: 2px 4px; border: 0; background: #fff; color: #111; }
+      th { color: #333; }
+      .stat { background: #fff; border-color: #ccc; }
+      .chart-surface { border-color: #bbb; }
+      .page-note { color: #222; border-color: #bbb; }
+      button { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">Δ</div>
+        <div>
+          <h1>Gráficos de investigação</h1>
+          <p class="subtitle">Editor manual de dados experimentais · arquivo único e offline</p>
+        </div>
+      </div>
+      <span class="scope">Somente leituras inseridas por você · sem simulação química</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="layout">
+      <section class="panel" aria-labelledby="dados-heading">
+        <div class="panel-head">
+          <h2 id="dados-heading">1. Editar dados</h2>
+          <p class="hint">Digite ou altere diretamente o nome da série, o volume adicionado e o pH medido. O gráfico acompanha as alterações.</p>
+        </div>
+        <div class="toolbar" aria-label="Ações dos dados">
+          <button type="button" class="primary" id="add-point">＋ Adicionar ponto</button>
+          <button type="button" id="import-button">Importar CSV</button>
+          <button type="button" id="export-csv">Baixar CSV</button>
+          <button type="button" class="quiet danger" id="clear-data">Limpar dados</button>
+          <input class="visually-hidden" type="file" id="import-file" accept=".csv,.txt,.tsv,text/csv,text/plain" tabindex="-1">
+        </div>
+        <div class="table-scroll">
+          <table aria-label="Tabela de pontos experimentais">
+            <thead>
+              <tr>
+                <th scope="col">Série</th>
+                <th scope="col">Volume (mL)</th>
+                <th scope="col">pH</th>
+                <th scope="col"><span class="visually-hidden">Ação</span></th>
+              </tr>
+            </thead>
+            <tbody id="point-rows"></tbody>
+          </table>
+        </div>
+        <fieldset class="series-color-panel">
+          <legend>Cores das séries</legend>
+          <div id="series-colors" class="series-color-list"><p class="hint">As cores aparecerão quando os dados forem preenchidos.</p></div>
+        </fieldset>
+        <p class="data-note">Use vírgula ou ponto decimal. O pH válido vai de 0 a 14; o volume deve ser maior ou igual a zero. Linhas incompletas não são plotadas. A entrada e a análise aceitam casas decimais de milésimos (0,001).</p>
+        <p id="validation" class="validation" role="status" aria-live="polite">Preencha volume e pH para inserir pontos no gráfico.</p>
+        <div class="toolbar">
+          <button type="button" id="load-example">Carregar exemplo simples</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="grafico-heading">
+        <div class="panel-head">
+          <h2 id="grafico-heading">2. Visualizar gráfico</h2>
+          <p class="hint">Os eixos são calculados a partir dos dados válidos. Nenhuma curva é prevista ou gerada por um modelo químico.</p>
+        </div>
+        <div class="chart-controls">
+          <div class="tabs" role="tablist" aria-label="Tipo de gráfico">
+            <button type="button" role="tab" id="tab-curve" data-view="curve" aria-selected="true" aria-controls="chart-host">pH × volume</button>
+            <button type="button" role="tab" id="tab-derivative" data-view="derivative" aria-selected="false" aria-controls="chart-host">ΔpH/ΔV</button>
+          </div>
+          <button type="button" id="download-svg" disabled>Baixar SVG</button>
+          <button type="button" id="export-settings">Exportar configurações</button>
+          <button type="button" id="import-settings">Importar configurações</button>
+          <input class="visually-hidden" type="file" id="settings-file" accept=".json,application/json" tabindex="-1">
+          <button type="button" class="quiet" id="print-chart">Imprimir</button>
+        </div>
+        <details class="customization" id="customization" open>
+          <summary>Personalizar títulos, eixos e aparência</summary>
+          <p class="customization-intro">Limites vazios usam o ajuste automático. Informe os limites e o intervalo em casas decimais de até 0,001. Para ver uma faixa muito estreita, ajuste início, fim e intervalo do eixo.</p>
+          <div class="custom-grid">
+            <fieldset class="settings-group">
+              <legend>pH × volume</legend>
+              <div class="settings-grid">
+                <label class="setting-field wide">Título do gráfico<input id="cfg-curve-title" type="text" maxlength="100" value="pH medido por volume adicionado"></label>
+                <label class="setting-field wide">Nome do eixo horizontal<input id="cfg-curve-x-label" type="text" maxlength="80" value="Volume adicionado (mL)"></label>
+                <label class="setting-field wide">Nome do eixo vertical<input id="cfg-curve-y-label" type="text" maxlength="80" value="pH medido"></label>
+                <p class="axis-heading">Faixa do eixo X (volume)</p>
+                <label class="setting-field">Início<input id="cfg-curve-x-min" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field">Fim<input id="cfg-curve-x-max" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field wide">Intervalo entre marcações<input id="cfg-curve-x-step" type="text" inputmode="decimal" placeholder="Automático; mínimo 0,001" value=""></label>
+                <p class="axis-heading">Faixa do eixo Y (pH)</p>
+                <label class="setting-field">Mínimo<input id="cfg-curve-y-min" type="text" inputmode="decimal" value="0"></label>
+                <label class="setting-field">Máximo<input id="cfg-curve-y-max" type="text" inputmode="decimal" value="14"></label>
+                <label class="setting-field wide">Intervalo entre marcações<input id="cfg-curve-y-step" type="text" inputmode="decimal" value="2"></label>
+              </div>
+              <div class="style-options">
+                <label><input type="checkbox" id="cfg-curve-grid" checked> Grade</label>
+                <label><input type="checkbox" id="cfg-curve-lines" checked> Conectar pontos</label>
+                <label><input type="checkbox" id="cfg-curve-markers" checked> Mostrar pontos</label>
+              </div>
+            </fieldset>
+            <fieldset class="settings-group">
+              <legend>ΔpH/ΔV</legend>
+              <div class="settings-grid">
+                <label class="setting-field wide">Título do gráfico<input id="cfg-derivative-title" type="text" maxlength="100" value="Variação de pH por volume"></label>
+                <label class="setting-field wide">Nome do eixo horizontal<input id="cfg-derivative-x-label" type="text" maxlength="80" value="Volume final do intervalo (mL)"></label>
+                <label class="setting-field wide">Nome do eixo vertical<input id="cfg-derivative-y-label" type="text" maxlength="80" value="ΔpH/ΔV (pH/mL)"></label>
+                <p class="axis-heading">Faixa do eixo X (volume)</p>
+                <label class="setting-field">Início<input id="cfg-derivative-x-min" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field">Fim<input id="cfg-derivative-x-max" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field wide">Intervalo entre marcações<input id="cfg-derivative-x-step" type="text" inputmode="decimal" placeholder="Automático; mínimo 0,001" value=""></label>
+                <p class="axis-heading">Faixa do eixo Y (ΔpH/ΔV)</p>
+                <label class="setting-field">Mínimo<input id="cfg-derivative-y-min" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field">Máximo<input id="cfg-derivative-y-max" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field wide">Intervalo entre marcações<input id="cfg-derivative-y-step" type="text" inputmode="decimal" placeholder="Automático; mínimo 0,001" value=""></label>
+                <label class="setting-field wide">Casas decimais dos rótulos
+                  <select id="cfg-decimals">
+                    <option value="3" selected>3 casas (0,001)</option>
+                    <option value="4">4 casas (0,0001)</option>
+                    <option value="5">5 casas (0,00001)</option>
+                    <option value="6">6 casas (0,000001)</option>
+                  </select>
+                </label>
+              </div>
+              <div class="style-options">
+                <label><input type="checkbox" id="cfg-derivative-grid" checked> Grade</label>
+                <label><input type="checkbox" id="cfg-derivative-lines" checked> Conectar pontos</label>
+                <label><input type="checkbox" id="cfg-derivative-markers" checked> Mostrar pontos</label>
+              </div>
+            </fieldset>
+          </div>
+          <p id="settings-status" class="settings-status" role="status" aria-live="polite">Intervalos manuais aceitam incrementos de 0,001. Se houver mais de 120 marcações, a escala será espaçada automaticamente para manter a leitura.</p>
+        </details>
+        <div class="chart-body">
+          <h3 id="chart-title" class="chart-title">pH medido por volume adicionado</h3>
+          <div id="chart-host" class="chart-surface" aria-live="polite">
+            <div class="empty-state"><strong>O gráfico aparecerá aqui</strong><p>Insira pelo menos um ponto com volume e pH válidos. Para calcular ΔpH/ΔV, informe duas leituras com volumes diferentes na mesma sequência.</p></div>
+          </div>
+          <div id="series-legend" class="legend" aria-label="Legenda das séries"></div>
+          <div class="stats" aria-label="Resumo dos dados">
+            <div class="stat"><span class="stat-label">Pontos válidos</span><span id="stat-points" class="stat-value">0</span></div>
+            <div class="stat"><span class="stat-label">Intervalo de pH</span><span id="stat-range" class="stat-value">—</span></div>
+            <div class="stat"><span class="stat-label">Variações calculáveis</span><span id="stat-slopes" class="stat-value">0</span></div>
+          </div>
+          <p id="chart-explanation" class="chart-explanation">O gráfico conecta os pontos informados. A linha não representa uma previsão científica.</p>
+          <details>
+            <summary>Formato para importar dados de uma planilha</summary>
+            <p>Use um arquivo CSV separado por ponto e vírgula, com cabeçalho. A coluna Série é opcional; o volume e o pH são necessários. Também é possível usar duas colunas (Volume e pH).</p>
+            <code class="csv-example">Série;Volume (mL);pH
+Amostra A;0;3,2
+Amostra A;1;3,5
+Amostra A;2;4,1
+Amostra B;0;6,8
+Amostra B;1;6,9</code>
+          </details>
+        </div>
+      </section>
+    </div>
+
+    <aside class="page-note">
+      <strong>Escopo desta ferramenta.</strong>
+      Este HTML independente aproveita a ideia de representação dos registros experimentais do painel <em>Investigar → Analisar</em>: gráfico pH × volume e variação ΔpH/ΔV. Não contém titulação interativa, recipientes, gotas, indicador, cálculo de equivalência, distribuição de espécies ou qualquer dependência do SIAB. O resultado é derivado exclusivamente dos valores digitados ou importados.
+    </aside>
+  </main>
+
+  <script>
+    "use strict";
+    (function () {
+      var COLORS = ["#087eaa", "#c44555", "#26836d", "#7856b5", "#d17a17", "#3972c6", "#a43b87", "#617d32"];
+      var points = [
+        { series: "Série A", volume: "", ph: "" },
+        { series: "Série A", volume: "", ph: "" },
+        { series: "Série A", volume: "", ph: "" }
+      ];
+      var currentView = "curve";
+      var rowsEl = document.getElementById("point-rows");
+      var chartHost = document.getElementById("chart-host");
+      var legendEl = document.getElementById("series-legend");
+      var validationEl = document.getElementById("validation");
+      var downloadSvgButton = document.getElementById("download-svg");
+      var chartTitle = document.getElementById("chart-title");
+      var chartExplanation = document.getElementById("chart-explanation");
+      var seriesColorsEl = document.getElementById("series-colors");
+      var settingsStatusEl = document.getElementById("settings-status");
+      var settingsWarnings = [];
+      var seriesColors = {};
+      var colorNamesSignature = "";
+      var SETTINGS_IDS = [
+        "cfg-curve-title", "cfg-curve-x-label", "cfg-curve-y-label",
+        "cfg-curve-x-min", "cfg-curve-x-max", "cfg-curve-x-step",
+        "cfg-curve-y-min", "cfg-curve-y-max", "cfg-curve-y-step",
+        "cfg-curve-grid", "cfg-curve-lines", "cfg-curve-markers",
+        "cfg-derivative-title", "cfg-derivative-x-label", "cfg-derivative-y-label",
+        "cfg-derivative-x-min", "cfg-derivative-x-max", "cfg-derivative-x-step",
+        "cfg-derivative-y-min", "cfg-derivative-y-max", "cfg-derivative-y-step",
+        "cfg-derivative-grid", "cfg-derivative-lines", "cfg-derivative-markers", "cfg-decimals"
+      ];
+      var W = 880, H = 500;
+      var M = { left: 78, right: 28, top: 42, bottom: 76 };
+
+      function escapeHTML(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+      }
+      function parseNumber(value) {
+        var text = String(value == null ? "" : value).trim().replace(/\s/g, "").replace(",", ".");
+        if (text === "") return null;
+        var number = Number(text);
+        return Number.isFinite(number) ? number : NaN;
+      }
+      function displayDigits() {
+        var value = Number(document.getElementById("cfg-decimals").value);
+        return Number.isInteger(value) && value >= 3 && value <= 6 ? value : 3;
+      }
+      function formatNumber(value, digits) {
+        if (!Number.isFinite(value)) return "—";
+        return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: digits == null ? displayDigits() : digits }).format(value);
+      }
+      function nonEmpty(point) {
+        return String(point.volume).trim() !== "" || String(point.ph).trim() !== "";
+      }
+      function getPointState() {
+        var valid = [], incomplete = 0, invalid = 0;
+        points.forEach(function (point, index) {
+          var v = parseNumber(point.volume), ph = parseNumber(point.ph);
+          if (!nonEmpty(point)) return;
+          if (v === null || ph === null || Number.isNaN(v) || Number.isNaN(ph)) {
+            incomplete++;
+            return;
+          }
+          if (v < 0 || ph < 0 || ph > 14) {
+            invalid++;
+            return;
+          }
+          valid.push({
+            series: String(point.series || "").trim() || "Série A",
+            volume: v,
+            ph: ph,
+            index: index
+          });
+        });
+        return { valid: valid, incomplete: incomplete, invalid: invalid };
+      }
+      function renderRows() {
+        rowsEl.innerHTML = points.map(function (point, index) {
+          return '<tr data-index="' + index + '">' +
+            '<td><label class="visually-hidden" for="series-' + index + '">Nome da série do ponto ' + (index + 1) + '</label>' +
+            '<input class="series-input" id="series-' + index + '" type="text" data-field="series" maxlength="60" value="' + escapeHTML(point.series) + '" aria-label="Série do ponto ' + (index + 1) + '"></td>' +
+            '<td><label class="visually-hidden" for="volume-' + index + '">Volume do ponto ' + (index + 1) + '</label>' +
+            '<input id="volume-' + index + '" type="text" inputmode="decimal" autocomplete="off" data-field="volume" value="' + escapeHTML(point.volume) + '" aria-label="Volume em mL do ponto ' + (index + 1) + '"></td>' +
+            '<td><label class="visually-hidden" for="ph-' + index + '">pH do ponto ' + (index + 1) + '</label>' +
+            '<input id="ph-' + index + '" type="text" inputmode="decimal" autocomplete="off" data-field="ph" value="' + escapeHTML(point.ph) + '" aria-label="pH do ponto ' + (index + 1) + '"></td>' +
+            '<td><button type="button" class="remove-btn quiet" data-remove="' + index + '" aria-label="Remover ponto ' + (index + 1) + '" title="Remover ponto">×</button></td>' +
+            '</tr>';
+        }).join("");
+      }
+      function makeSegments(validPoints) {
+        var segments = [];
+        validPoints.forEach(function (point) {
+          var last = segments.length ? segments[segments.length - 1] : null;
+          if (!last || last.series !== point.series || point.volume < last.points[last.points.length - 1].volume) {
+            segments.push({ series: point.series, points: [point] });
+          } else {
+            last.points.push(point);
+          }
+        });
+        return segments;
+      }
+      function getSlopes(segments) {
+        var slopes = [];
+        segments.forEach(function (segment) {
+          for (var i = 1; i < segment.points.length; i++) {
+            var previous = segment.points[i - 1];
+            var current = segment.points[i];
+            var deltaVolume = current.volume - previous.volume;
+            if (deltaVolume <= 0) continue;
+            slopes.push({
+              series: segment.series,
+              volume: current.volume,
+              ph: current.ph,
+              slope: (current.ph - previous.ph) / deltaVolume,
+              fromVolume: previous.volume,
+              toVolume: current.volume
+            });
+          }
+        });
+        return slopes;
+      }
+      function niceStep(range, target) {
+        if (!Number.isFinite(range) || range <= 0) return 1;
+        var raw = range / (target || 5);
+        var power = Math.pow(10, Math.floor(Math.log10(raw)));
+        var scaled = raw / power;
+        var nice = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
+        return nice * power;
+      }
+      function ticks(min, max, step) {
+        if (!Number.isFinite(step) || step <= 0) step = niceStep(max - min, 6);
+        var first = Math.ceil((min - 1e-10) / step) * step;
+        var result = [];
+        for (var value = first, guard = 0; value <= max + step * 1e-7 && guard < 121; value += step, guard++) {
+          result.push(Number(value.toFixed(9)));
+        }
+        return result;
+      }
+      function settingValue(id) {
+        var element = document.getElementById(id);
+        var raw = element ? String(element.value || "").trim() : "";
+        if (!raw) return null;
+        return parseNumber(raw);
+      }
+      function autoUpper(values, minimum) {
+        var actualMax = values.length ? Math.max.apply(null, values) : minimum + 1;
+        var range = Math.max(actualMax - minimum, 0.001);
+        var step = niceStep(range, 6);
+        var max = Math.ceil((actualMax - minimum) / step) * step + minimum;
+        if (max <= minimum) max = minimum + step;
+        return Number(max.toFixed(9));
+      }
+      function makeAxis(prefix, axisName, automaticMin, automaticMax, target, minAllowed) {
+        var minId = "cfg-" + prefix + "-" + axisName + "-min";
+        var maxId = "cfg-" + prefix + "-" + axisName + "-max";
+        var stepId = "cfg-" + prefix + "-" + axisName + "-step";
+        var rawMinText = document.getElementById(minId).value.trim();
+        var rawMaxText = document.getElementById(maxId).value.trim();
+        var rawStepText = document.getElementById(stepId).value.trim();
+        var rawMin = settingValue(minId), rawMax = settingValue(maxId), rawStep = settingValue(stepId);
+        var min = rawMinText === "" ? automaticMin : rawMin;
+        var max = rawMaxText === "" ? automaticMax : rawMax;
+        if (rawMinText !== "" && (rawMin === null || !Number.isFinite(rawMin))) {
+          settingsWarnings.push("O início do eixo " + axisName.toUpperCase() + " de " + prefix + " não é numérico; usei o automático.");
+          min = automaticMin;
+        }
+        if (rawMaxText !== "" && (rawMax === null || !Number.isFinite(rawMax))) {
+          settingsWarnings.push("O fim do eixo " + axisName.toUpperCase() + " de " + prefix + " não é numérico; usei o automático.");
+          max = automaticMax;
+        }
+        if (minAllowed != null && min < minAllowed) {
+          settingsWarnings.push("O início do eixo " + axisName.toUpperCase() + " não pode ser menor que " + formatNumber(minAllowed, 3) + "; usei o limite permitido.");
+          min = minAllowed;
+        }
+        if (!Number.isFinite(min) || !Number.isFinite(max) || min >= max) {
+          settingsWarnings.push("A faixa do eixo " + axisName.toUpperCase() + " de " + prefix + " precisa ter mínimo menor que máximo; usei o ajuste automático.");
+          min = automaticMin;
+          max = automaticMax;
+        }
+        var step = null;
+        if (rawStepText !== "") {
+          if (rawStep === null || !Number.isFinite(rawStep) || rawStep < 0.001) {
+            settingsWarnings.push("O intervalo do eixo " + axisName.toUpperCase() + " precisa ser de pelo menos 0,001; usei o automático.");
+          } else {
+            step = rawStep;
+          }
+        }
+        if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+          min = 0;
+          max = 1;
+        }
+        var automaticStep = niceStep(max - min, target || 6);
+        if (step == null) step = automaticStep;
+        if ((max - min) / step > 120) {
+          if (rawStepText !== "") settingsWarnings.push("O intervalo solicitado no eixo " + axisName.toUpperCase() + " de " + prefix + " criaria mais de 120 marcações; aumentei o intervalo visual para " + formatNumber(automaticStep, displayDigits()) + " para manter o gráfico legível.");
+          step = automaticStep;
+        }
+        return { min: min, max: max, step: step, ticks: ticks(min, max, step) };
+      }
+      function getGraphConfig(view, values) {
+        var prefix = view === "curve" ? "curve" : "derivative";
+        var title = document.getElementById("cfg-" + prefix + "-title").value.trim();
+        var xLabel = document.getElementById("cfg-" + prefix + "-x-label").value.trim();
+        var yLabel = document.getElementById("cfg-" + prefix + "-y-label").value.trim();
+        var volumes = values.map(function (point) { return point.volume; });
+        var autoXMax = autoUpper(volumes, 0);
+        var autoYMin = 0, autoYMax = 14;
+        if (view === "derivative" && values.length) {
+          var slopes = values.map(function (point) { return point.slope; });
+          var minSlope = Math.min.apply(null, slopes), maxSlope = Math.max.apply(null, slopes);
+          var delta = maxSlope - minSlope;
+          var padding = delta > 0 ? delta * 0.12 : Math.max(0.1, Math.abs(maxSlope) * 0.15);
+          autoYMin = Math.min(0, minSlope - padding);
+          autoYMax = Math.max(0, maxSlope + padding);
+          if (autoYMax - autoYMin < 0.001) { autoYMin = -1; autoYMax = 1; }
+        }
+        return {
+          title: title || (view === "curve" ? "pH medido por volume adicionado" : "Variação de pH por volume"),
+          xLabel: xLabel || (view === "curve" ? "Volume adicionado (mL)" : "Volume final do intervalo (mL)"),
+          yLabel: yLabel || (view === "curve" ? "pH medido" : "ΔpH/ΔV (pH/mL)"),
+          grid: document.getElementById("cfg-" + prefix + "-grid").checked,
+          lines: document.getElementById("cfg-" + prefix + "-lines").checked,
+          markers: document.getElementById("cfg-" + prefix + "-markers").checked,
+          x: makeAxis(prefix, "x", 0, autoXMax, 6, 0),
+          y: makeAxis(prefix, "y", autoYMin, autoYMax, 6, null)
+        };
+      }
+      function colorFor(seriesName, names) {
+        var custom = seriesColors[seriesName];
+        if (typeof custom === "string" && /^#[0-9a-f]{6}$/i.test(custom)) return custom;
+        var index = names.indexOf(seriesName);
+        return COLORS[(index < 0 ? 0 : index) % COLORS.length];
+      }
+      function currentSeriesNames() {
+        var names = [];
+        points.forEach(function (point) {
+          var name = String(point.series || "").trim() || "Série A";
+          if (names.indexOf(name) < 0) names.push(name);
+        });
+        return names;
+      }
+      function syncSeriesColorControls() {
+        var names = currentSeriesNames();
+        var signature = JSON.stringify(names);
+        if (signature === colorNamesSignature) return;
+        colorNamesSignature = signature;
+        if (!names.length) {
+          seriesColorsEl.innerHTML = '<p class="hint">As cores aparecerão quando os dados forem preenchidos.</p>';
+          return;
+        }
+        seriesColorsEl.innerHTML = names.map(function (name, index) {
+          var color = colorFor(name, names);
+          return '<div class="series-color-item"><label for="series-color-' + index + '">' + escapeHTML(name) + '</label><input type="color" id="series-color-' + index + '" data-series-color="' + escapeHTML(name) + '" value="' + color + '" aria-label="Cor da série ' + escapeHTML(name) + '"></div>';
+        }).join("");
+      }
+      function seriesNames(segments) {
+        var names = [];
+        segments.forEach(function (segment) {
+          if (names.indexOf(segment.series) < 0) names.push(segment.series);
+        });
+        return names;
+      }
+      function buildLegend(names) {
+        legendEl.innerHTML = names.map(function (name) {
+          return '<span class="legend-item"><span class="legend-swatch" style="background:' + colorFor(name, names) + '"></span><span>' + escapeHTML(name) + '</span></span>';
+        }).join("");
+      }
+      function svgStart(label) {
+        return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + escapeHTML(label) + '">' +
+          '<title>' + escapeHTML(label) + '</title><rect width="' + W + '" height="' + H + '" fill="#ffffff"/>' +
+          '<style>text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dce4eb;stroke-width:1} .axis{stroke:#425467;stroke-width:1.4} .tick{fill:#324659;font-size:12px} .axis-label{fill:#1b2b3a;font-size:13px;font-weight:650} .plot-title{fill:#172b3d;font-size:18px;font-weight:700}</style>' +
+          '<text class="plot-title" x="' + (W / 2) + '" y="25" text-anchor="middle">' + escapeHTML(label) + '</text>';
+      }
+      function pathFor(pointsToDraw, x, y) {
+        return pointsToDraw.map(function (point) {
+          return x(point.volume).toFixed(2) + "," + y(point.ph).toFixed(2);
+        }).join(" ");
+      }
+      function emptyMessage(title, message) {
+        chartHost.innerHTML = '<div class="empty-state"><strong>' + escapeHTML(title) + '</strong><p>' + escapeHTML(message) + '</p></div>';
+        downloadSvgButton.disabled = true;
+        legendEl.innerHTML = "";
+      }
+      function renderCurve(segments, validPoints) {
+        var derived = validPoints.map(function (point) { return { series: point.series, volume: point.volume, ph: point.ph }; });
+        var config = getGraphConfig("curve", derived);
+        if (!validPoints.length) {
+          emptyMessage("O gráfico aparecerá aqui", "Preencha volume e pH em pelo menos uma linha para mostrar os pontos informados.");
+          chartTitle.textContent = config.title;
+          chartExplanation.textContent = "O gráfico conecta apenas os pontos digitados. Não há curva prevista nem valores calculados automaticamente.";
+          return;
+        }
+        var plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+        var x = function (value) { return M.left + ((value - config.x.min) / (config.x.max - config.x.min)) * plotW; };
+        var y = function (value) { return M.top + (1 - ((value - config.y.min) / (config.y.max - config.y.min))) * plotH; };
+        var svg = svgStart(config.title);
+        svg += '<defs><clipPath id="plot-clip"><rect x="' + M.left + '" y="' + M.top + '" width="' + plotW + '" height="' + plotH + '"/></clipPath></defs>';
+        config.y.ticks.forEach(function (value) {
+          if (config.grid) svg += '<line class="grid" x1="' + M.left + '" y1="' + y(value) + '" x2="' + (W - M.right) + '" y2="' + y(value) + '"/>';
+          svg += '<text class="tick" x="' + (M.left - 12) + '" y="' + (y(value) + 4) + '" text-anchor="end">' + formatNumber(value) + '</text>';
+        });
+        config.x.ticks.forEach(function (value) {
+          var xx = x(value);
+          if (config.grid) svg += '<line class="grid" x1="' + xx + '" y1="' + M.top + '" x2="' + xx + '" y2="' + (H - M.bottom) + '"/>';
+          svg += '<text class="tick" x="' + xx + '" y="' + (H - M.bottom + 22) + '" text-anchor="middle">' + formatNumber(value) + '</text>';
+        });
+        svg += '<line class="axis" x1="' + M.left + '" y1="' + M.top + '" x2="' + M.left + '" y2="' + (H - M.bottom) + '"/>';
+        svg += '<line class="axis" x1="' + M.left + '" y1="' + (H - M.bottom) + '" x2="' + (W - M.right) + '" y2="' + (H - M.bottom) + '"/>';
+        svg += '<text class="axis-label" x="' + (M.left + plotW / 2) + '" y="' + (H - 18) + '" text-anchor="middle">' + escapeHTML(config.xLabel) + '</text>';
+        svg += '<text class="axis-label" x="22" y="' + (M.top + plotH / 2) + '" transform="rotate(-90 22 ' + (M.top + plotH / 2) + ')" text-anchor="middle">' + escapeHTML(config.yLabel) + '</text>';
+        var names = seriesNames(segments);
+        svg += '<g clip-path="url(#plot-clip)">';
+        segments.forEach(function (segment) {
+          var color = colorFor(segment.series, names);
+          if (config.lines && segment.points.length > 1) {
+            var coords = segment.points.map(function (point) { return x(point.volume).toFixed(3) + "," + y(point.ph).toFixed(3); }).join(" ");
+            svg += '<polyline points="' + coords + '" fill="none" stroke="' + color + '" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>';
+          }
+          if (config.markers) segment.points.forEach(function (point) {
+            var tip = segment.series + " · " + formatNumber(point.volume) + " mL · pH " + formatNumber(point.ph);
+            svg += '<circle cx="' + x(point.volume).toFixed(3) + '" cy="' + y(point.ph).toFixed(3) + '" r="4.5" fill="' + color + '" stroke="#ffffff" stroke-width="1.5"><title>' + escapeHTML(tip) + '</title></circle>';
+          });
+        });
+        svg += '</g></svg>';
+        chartHost.innerHTML = svg;
+        downloadSvgButton.disabled = false;
+        buildLegend(names);
+        chartTitle.textContent = config.title;
+        chartExplanation.textContent = "Os pontos representam as leituras inseridas. A linha apenas conecta registros na mesma sequência; não representa uma curva teórica. Pontos fora dos limites manuais do gráfico ficam fora da área visível.";
+      }
+      function renderDerivative(segments) {
+        var slopes = getSlopes(segments);
+        var config = getGraphConfig("derivative", slopes);
+        if (!slopes.length) {
+          emptyMessage("Ainda não há variações calculáveis", "Informe ao menos duas leituras válidas, na mesma sequência, com volumes diferentes. A ferramenta calcula ΔpH/ΔV entre pontos consecutivos.");
+          chartTitle.textContent = config.title;
+          chartExplanation.textContent = "Cada valor é calculado como (pH atual − pH anterior) ÷ (volume atual − volume anterior), em pH/mL. Valores negativos indicam queda do pH.";
+          return;
+        }
+        var plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+        var x = function (value) { return M.left + ((value - config.x.min) / (config.x.max - config.x.min)) * plotW; };
+        var y = function (value) { return M.top + (1 - ((value - config.y.min) / (config.y.max - config.y.min))) * plotH; };
+        var svg = svgStart(config.title);
+        svg += '<defs><clipPath id="plot-clip"><rect x="' + M.left + '" y="' + M.top + '" width="' + plotW + '" height="' + plotH + '"/></clipPath></defs>';
+        config.y.ticks.forEach(function (value) {
+          if (config.grid) svg += '<line class="grid" x1="' + M.left + '" y1="' + y(value) + '" x2="' + (W - M.right) + '" y2="' + y(value) + '"/>';
+          svg += '<text class="tick" x="' + (M.left - 12) + '" y="' + (y(value) + 4) + '" text-anchor="end">' + formatNumber(value) + '</text>';
+        });
+        config.x.ticks.forEach(function (value) {
+          var xx = x(value);
+          if (config.grid) svg += '<line class="grid" x1="' + xx + '" y1="' + M.top + '" x2="' + xx + '" y2="' + (H - M.bottom) + '"/>';
+          svg += '<text class="tick" x="' + xx + '" y="' + (H - M.bottom + 22) + '" text-anchor="middle">' + formatNumber(value) + '</text>';
+        });
+        svg += '<line class="axis" x1="' + M.left + '" y1="' + M.top + '" x2="' + M.left + '" y2="' + (H - M.bottom) + '"/>';
+        svg += '<line class="axis" x1="' + M.left + '" y1="' + (H - M.bottom) + '" x2="' + (W - M.right) + '" y2="' + (H - M.bottom) + '"/>';
+        svg += '<g clip-path="url(#plot-clip)">';
+        if (config.y.min <= 0 && config.y.max >= 0) {
+          svg += '<line x1="' + M.left + '" y1="' + y(0) + '" x2="' + (W - M.right) + '" y2="' + y(0) + '" stroke="#6d7e8c" stroke-width="1.6" stroke-dasharray="6 4"/>';
+        }
+        var names = [];
+        slopes.forEach(function (point) { if (names.indexOf(point.series) < 0) names.push(point.series); });
+        names.forEach(function (name) {
+          var seriesPoints = slopes.filter(function (point) { return point.series === name; });
+          var color = colorFor(name, names);
+          if (config.lines && seriesPoints.length > 1) {
+            svg += '<polyline points="' + seriesPoints.map(function (point) { return x(point.volume).toFixed(3) + "," + y(point.slope).toFixed(3); }).join(" ") + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+          }
+          if (config.markers) seriesPoints.forEach(function (point) {
+            var tip = point.series + " · " + formatNumber(point.fromVolume) + "–" + formatNumber(point.toVolume) + " mL · ΔpH/ΔV = " + formatNumber(point.slope);
+            svg += '<circle cx="' + x(point.volume).toFixed(3) + '" cy="' + y(point.slope).toFixed(3) + '" r="4.5" fill="' + color + '" stroke="#ffffff" stroke-width="1.5"><title>' + escapeHTML(tip) + '</title></circle>';
+          });
+        });
+        svg += '</g>';
+        svg += '<text class="axis-label" x="' + (M.left + plotW / 2) + '" y="' + (H - 18) + '" text-anchor="middle">' + escapeHTML(config.xLabel) + '</text>';
+        svg += '<text class="axis-label" x="22" y="' + (M.top + plotH / 2) + '" transform="rotate(-90 22 ' + (M.top + plotH / 2) + ')" text-anchor="middle">' + escapeHTML(config.yLabel) + '</text>';
+        svg += "</svg>";
+        chartHost.innerHTML = svg;
+        downloadSvgButton.disabled = false;
+        buildLegend(names);
+        chartTitle.textContent = config.title;
+        chartExplanation.textContent = "Cada ponto usa duas leituras consecutivas: ΔpH/ΔV = (pH atual − pH anterior) ÷ (volume atual − volume anterior). O valor é associado ao volume da segunda leitura. Valores negativos indicam queda de pH. Pontos fora dos limites manuais ficam fora da área visível.";
+      }
+      function renderAll() {
+        var state = getPointState();
+        var valid = state.valid;
+        var segments = makeSegments(valid);
+        var slopes = getSlopes(segments);
+        settingsWarnings = [];
+        syncSeriesColorControls();
+        document.getElementById("stat-points").textContent = String(valid.length);
+        if (valid.length) {
+          var phValues = valid.map(function (point) { return point.ph; });
+          document.getElementById("stat-range").textContent = formatNumber(Math.min.apply(null, phValues)) + "–" + formatNumber(Math.max.apply(null, phValues));
+        } else {
+          document.getElementById("stat-range").textContent = "—";
+        }
+        document.getElementById("stat-slopes").textContent = String(slopes.length);
+        var messages = [];
+        if (state.incomplete) messages.push(state.incomplete + (state.incomplete === 1 ? " linha incompleta não exibida" : " linhas incompletas não exibidas"));
+        if (state.invalid) messages.push(state.invalid + (state.invalid === 1 ? " linha com valor fora do intervalo" : " linhas com valores fora do intervalo"));
+        if (!valid.length && !messages.length) messages.push("Preencha volume e pH para inserir pontos no gráfico.");
+        validationEl.textContent = messages.length ? messages.join(". ") + "." : valid.length + (valid.length === 1 ? " ponto válido." : " pontos válidos.") + " Os dados são plotados exatamente como informados.";
+        validationEl.classList.toggle("warn", state.invalid > 0);
+        rowsEl.querySelectorAll("tr").forEach(function (row, index) {
+          var point = points[index];
+          ["volume", "ph"].forEach(function (field) {
+            var input = row.querySelector('[data-field="' + field + '"]');
+            if (!input) return;
+            var value = parseNumber(point[field]);
+            var invalid = value !== null && (Number.isNaN(value) || (field === "volume" ? value < 0 : value < 0 || value > 14));
+            input.setAttribute("aria-invalid", invalid ? "true" : "false");
+          });
+        });
+        if (currentView === "curve") renderCurve(segments, valid);
+        else renderDerivative(segments);
+        settingsStatusEl.textContent = (settingsWarnings.length ? settingsWarnings.join(" ") + " " : "") +
+          "Faixas e valores aceitam resolução de 0,001. As marcações automáticas se adaptam à faixa; intervalos que gerariam mais de 120 marcações são ampliados para legibilidade.";
+        settingsStatusEl.classList.toggle("warn", settingsWarnings.length > 0);
+      }
+      function addPoint() {
+        var series = points.length ? String(points[points.length - 1].series || "").trim() : "";
+        points.push({ series: series || "Série A", volume: "", ph: "" });
+        renderRows();
+        renderAll();
+        var target = document.getElementById("volume-" + (points.length - 1));
+        if (target) target.focus();
+      }
+      function download(name, type, text) {
+        var blob = new Blob([text], { type: type });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }
+      function csvField(value) {
+        var text = String(value == null ? "" : value);
+        return /[;"\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+      }
+      function exportCSV() {
+        var lines = [["Série", "Volume (mL)", "pH"]].concat(points.map(function (point) {
+          return [point.series, point.volume, point.ph];
+        }));
+        var csv = "\uFEFF" + lines.map(function (line) { return line.map(csvField).join(";"); }).join("\r\n");
+        download("dados-graficos-investigacao.csv", "text/csv;charset=utf-8", csv);
+      }
+      function parseCSVLine(line, delimiter) {
+        var fields = [], field = "", quoted = false;
+        for (var i = 0; i < line.length; i++) {
+          var char = line[i];
+          if (char === '"' && quoted && line[i + 1] === '"') { field += '"'; i++; }
+          else if (char === '"') quoted = !quoted;
+          else if (char === delimiter && !quoted) { fields.push(field); field = ""; }
+          else field += char;
+        }
+        fields.push(field);
+        return fields;
+      }
+      function keyName(value) {
+        return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      }
+      function importCSVText(text) {
+        var source = String(text || "").replace(/^\uFEFF/, "").replace(/\r/g, "").split("\n").filter(function (line) { return line.trim() !== ""; });
+        if (!source.length) throw new Error("O arquivo está vazio.");
+        var firstLine = source[0];
+        var delimiter = firstLine.indexOf(";") >= 0 ? ";" : firstLine.indexOf("\t") >= 0 ? "\t" : ",";
+        var firstFields = parseCSVLine(firstLine, delimiter);
+        var keys = firstFields.map(keyName);
+        var hasHeader = keys.some(function (key) { return key.indexOf("volume") >= 0 || key.indexOf("serie") >= 0 || key === "grupo" || key === "ph" || key.indexOf("phmedido") >= 0; });
+        var serieIndex = keys.findIndex(function (key) { return key.indexOf("serie") >= 0 || key === "grupo" || key === "conjunto"; });
+        var volumeIndex = keys.findIndex(function (key) { return key.indexOf("volume") >= 0; });
+        var phIndex = keys.findIndex(function (key) { return key === "ph" || key.indexOf("phmedido") >= 0; });
+        var dataLines = hasHeader ? source.slice(1) : source;
+        var imported = [];
+        dataLines.forEach(function (line) {
+          var fields = parseCSVLine(line, delimiter);
+          if (!fields.length) return;
+          var series, volume, ph;
+          if (hasHeader) {
+            series = serieIndex >= 0 ? fields[serieIndex] : "Série A";
+            volume = volumeIndex >= 0 ? fields[volumeIndex] : "";
+            ph = phIndex >= 0 ? fields[phIndex] : "";
+          } else if (fields.length >= 3) {
+            series = fields[0]; volume = fields[1]; ph = fields[2];
+          } else {
+            series = "Série A"; volume = fields[0] || ""; ph = fields[1] || "";
+          }
+          if (String(volume).trim() === "" && String(ph).trim() === "") return;
+          imported.push({ series: String(series || "Série A").trim() || "Série A", volume: String(volume || "").trim(), ph: String(ph || "").trim() });
+        });
+        if (!imported.length) throw new Error("Não encontrei linhas com volume e pH. Verifique o cabeçalho e use ponto e vírgula para separar as colunas.");
+        points = imported;
+        renderRows();
+        renderAll();
+      }
+      document.getElementById("add-point").addEventListener("click", addPoint);
+      document.getElementById("import-button").addEventListener("click", function () { document.getElementById("import-file").click(); });
+      document.getElementById("import-file").addEventListener("change", function (event) {
+        var file = event.target.files && event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          try { importCSVText(reader.result); }
+          catch (error) { window.alert(error.message || "Não foi possível importar esse arquivo."); }
+          event.target.value = "";
+        };
+        reader.onerror = function () { window.alert("Não foi possível ler o arquivo selecionado."); event.target.value = ""; };
+        reader.readAsText(file, "UTF-8");
+      });
+      document.getElementById("export-csv").addEventListener("click", exportCSV);
+      document.getElementById("export-settings").addEventListener("click", function () {
+        var settings = {};
+        SETTINGS_IDS.forEach(function (id) {
+          var element = document.getElementById(id);
+          settings[id] = element.type === "checkbox" ? element.checked : element.value;
+        });
+        download("configuracao-graficos-investigacao.json", "application/json;charset=utf-8", JSON.stringify({
+          format: "graficos-investigacao-manual-settings-v1",
+          currentView: currentView,
+          settings: settings,
+          seriesColors: seriesColors
+        }, null, 2));
+      });
+      document.getElementById("import-settings").addEventListener("click", function () {
+        document.getElementById("settings-file").click();
+      });
+      document.getElementById("settings-file").addEventListener("change", function (event) {
+        var file = event.target.files && event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            var parsed = JSON.parse(String(reader.result || ""));
+            if (!parsed || parsed.format !== "graficos-investigacao-manual-settings-v1" || !parsed.settings) throw new Error("Este arquivo não é uma configuração válida desta ferramenta.");
+            SETTINGS_IDS.forEach(function (id) {
+              if (!Object.prototype.hasOwnProperty.call(parsed.settings, id)) return;
+              var element = document.getElementById(id), value = parsed.settings[id];
+              if (element.type === "checkbox") element.checked = value === true;
+              else element.value = String(value == null ? "" : value);
+            });
+            var colors = {};
+            if (parsed.seriesColors && typeof parsed.seriesColors === "object") {
+              Object.keys(parsed.seriesColors).forEach(function (name) {
+                if (/^#[0-9a-f]{6}$/i.test(String(parsed.seriesColors[name]))) colors[name] = String(parsed.seriesColors[name]);
+              });
+            }
+            seriesColors = colors;
+            colorNamesSignature = "";
+            if (parsed.currentView === "curve" || parsed.currentView === "derivative") currentView = parsed.currentView;
+            document.querySelectorAll("[data-view]").forEach(function (tab) {
+              tab.setAttribute("aria-selected", tab.getAttribute("data-view") === currentView ? "true" : "false");
+            });
+            renderAll();
+          } catch (error) {
+            window.alert(error.message || "Não foi possível carregar as configurações.");
+          }
+          event.target.value = "";
+        };
+        reader.onerror = function () { window.alert("Não foi possível ler o arquivo de configuração."); event.target.value = ""; };
+        reader.readAsText(file, "UTF-8");
+      });
+      document.getElementById("clear-data").addEventListener("click", function () {
+        if (!window.confirm("Limpar todos os pontos digitados?")) return;
+        points = [{ series: "Série A", volume: "", ph: "" }];
+        renderRows();
+        renderAll();
+      });
+      document.getElementById("load-example").addEventListener("click", function () {
+        points = [
+          { series: "Exemplo", volume: "0", ph: "6,8" },
+          { series: "Exemplo", volume: "1", ph: "6,9" },
+          { series: "Exemplo", volume: "2", ph: "6,85" },
+          { series: "Exemplo", volume: "3", ph: "7,0" },
+          { series: "Exemplo", volume: "4", ph: "7,1" }
+        ];
+        renderRows();
+        renderAll();
+      });
+      document.getElementById("print-chart").addEventListener("click", function () { window.print(); });
+      downloadSvgButton.addEventListener("click", function () {
+        var svg = chartHost.querySelector("svg");
+        if (!svg) return;
+        var clone = svg.cloneNode(true);
+        clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        download(currentView === "curve" ? "grafico-ph-volume.svg" : "grafico-derivada-dph-dv.svg", "image/svg+xml;charset=utf-8", new XMLSerializer().serializeToString(clone));
+      });
+      document.querySelectorAll("[data-view]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          currentView = button.getAttribute("data-view");
+          document.querySelectorAll("[data-view]").forEach(function (tab) {
+            tab.setAttribute("aria-selected", tab === button ? "true" : "false");
+          });
+          renderAll();
+        });
+      });
+      document.getElementById("customization").addEventListener("input", function () {
+        renderAll();
+      });
+      document.getElementById("customization").addEventListener("change", function () {
+        renderAll();
+      });
+      seriesColorsEl.addEventListener("input", function (event) {
+        var input = event.target.closest("input[data-series-color]");
+        if (!input) return;
+        seriesColors[input.getAttribute("data-series-color")] = input.value;
+        renderAll();
+      });
+      rowsEl.addEventListener("input", function (event) {
+        var input = event.target.closest("input[data-field]");
+        if (!input) return;
+        var row = input.closest("tr");
+        var index = Number(row && row.getAttribute("data-index"));
+        if (!Number.isInteger(index) || !points[index]) return;
+        points[index][input.getAttribute("data-field")] = input.value;
+        renderAll();
+      });
+      rowsEl.addEventListener("click", function (event) {
+        var button = event.target.closest("button[data-remove]");
+        if (!button) return;
+        var index = Number(button.getAttribute("data-remove"));
+        if (!Number.isInteger(index)) return;
+        points.splice(index, 1);
+        if (!points.length) points.push({ series: "Série A", volume: "", ph: "" });
+        renderRows();
+        renderAll();
+      });
+      renderRows();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
