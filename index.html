@@ -11,8 +11,8 @@
   <meta name="description" content="Editor local e independente para inserir leituras manualmente e gerar gráficos de pH por volume e ΔpH/ΔV.">
   <title>Gráficos de investigação — editor manual</title>
   
-  <script type="module" crossorigin src="/graficosdetitula-o/assets/index-BlcSvmR5.js"></script>
-  <link rel="stylesheet" crossorigin href="/graficosdetitula-o/assets/index-BF7BUgYd.css">
+  <script type="module" crossorigin src="/graficosdetitula-o/assets/index-DZKxfPd1.js"></script>
+  <link rel="stylesheet" crossorigin href="/graficosdetitula-o/assets/index--2B3ZAjr.css">
 <link rel="manifest" href="/graficosdetitula-o/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/graficosdetitula-o/registerSW.js"></script>
 <meta name="theme-color" content="#101d2b">
 <link rel="icon" href="/graficosdetitula-o/favicon.ico" sizes="48x48">
@@ -108,22 +108,39 @@
 
   <main id="conteudo" tabindex="-1">
     <div class="layout">
-      <section class="panel" aria-labelledby="dados-heading">
-        <div class="panel-head">
-          <h2 id="dados-heading">Dados</h2>
-          <p class="hint">Edite série, volume e pH; os gráficos atualizam automaticamente.</p>
-        </div>
+      <details class="panel workspace-panel" id="data-panel" data-persist-open data-workspace-panel open aria-labelledby="dados-heading">
+        <summary class="panel-head panel-summary">
+          <span class="panel-title-copy">
+            <span class="panel-summary-title" id="dados-heading">Dados</span>
+            <span class="hint">Edite série, volume e pH; os gráficos atualizam automaticamente.</span>
+          </span>
+          <span class="collapse-indicator" aria-hidden="true"></span>
+        </summary>
         <div class="data-toolbar" aria-label="Ações dos dados">
           <div class="data-toolbar-primary">
             <button type="button" class="primary" id="add-point">＋ Adicionar leitura</button>
             <button type="button" id="import-button">Importar CSV</button>
           </div>
-          <div class="data-toolbar-secondary">
-            <button type="button" id="export-csv">Exportar CSV</button>
-            <button type="button" id="load-example">Usar exemplo</button>
-            <button type="button" class="quiet danger" id="clear-data">Limpar dados</button>
-          </div>
+          <details class="action-menu data-actions-menu" id="data-actions-menu">
+            <summary>Mais ações <span class="menu-caret" aria-hidden="true"></span></summary>
+            <div class="data-toolbar-secondary">
+              <button type="button" id="export-csv">Exportar CSV</button>
+              <button type="button" id="load-example">Usar exemplo</button>
+              <button type="button" class="quiet danger" id="clear-data">Limpar dados</button>
+            </div>
+          </details>
           <input class="visually-hidden" type="file" id="import-file" accept=".csv,.txt,.tsv,text/csv,text/plain" tabindex="-1">
+          <div class="toolbar-meta">
+            <div class="history-controls" aria-label="Histórico de alterações">
+              <button type="button" id="undo-action" class="history-button" disabled title="Desfazer (Ctrl/Cmd+Z)" aria-label="Desfazer alteração">↶ <span>Desfazer</span></button>
+              <button type="button" id="redo-action" class="history-button" disabled title="Refazer (Ctrl/Cmd+Shift+Z)" aria-label="Refazer alteração">↷ <span>Refazer</span></button>
+            </div>
+            <span class="draft-status" id="draft-status" data-state="saved" role="status" aria-live="polite">
+              <span class="draft-status-dot" aria-hidden="true"></span>
+              <span id="draft-status-text">Rascunho local pronto</span>
+            </span>
+            <span id="history-status" class="visually-hidden" aria-live="polite">Histórico de alterações vazio.</span>
+          </div>
         </div>
         <div class="data-overview" aria-label="Resumo da tabela de dados">
           <div class="data-overview-card"><span class="data-overview-label">Linhas</span><strong id="data-row-count" class="data-overview-value">3</strong></div>
@@ -145,31 +162,42 @@
             <tbody id="point-rows"></tbody>
           </table>
         </div>
-        <fieldset class="series-color-panel">
-          <legend>Cores das séries</legend>
-          <div id="series-colors" class="series-color-list"><p class="hint">As cores aparecerão quando os dados forem preenchidos.</p></div>
-        </fieldset>
+        <details class="section-disclosure" id="series-colors-details" data-persist-open>
+          <summary>Cores das séries <span class="menu-caret" aria-hidden="true"></span></summary>
+          <fieldset class="series-color-panel">
+            <legend class="visually-hidden">Cores das séries</legend>
+            <div id="series-colors" class="series-color-list"><p class="hint">As cores aparecerão quando os dados forem preenchidos.</p></div>
+          </fieldset>
+        </details>
         <p class="data-note" id="data-precision-note">Informe uma série, o volume em mL e o pH medido. Use vírgula ou ponto decimal; a análise aceita milésimos (0,001). Linhas incompletas não são plotadas.</p>
         <p id="validation" class="validation" data-state="empty" role="status" aria-live="polite">Preencha volume e pH para inserir pontos no gráfico.</p>
-      </section>
+      </details>
 
-      <section class="panel" aria-labelledby="grafico-heading">
-        <div class="panel-head">
-          <h2 id="grafico-heading">Gráficos</h2>
-          <p class="hint">Os gráficos usam apenas as leituras informadas.</p>
-        </div>
+      <details class="panel workspace-panel" id="chart-panel" data-persist-open data-workspace-panel open aria-labelledby="grafico-heading">
+        <summary class="panel-head panel-summary">
+          <span class="panel-title-copy">
+            <span class="panel-summary-title" id="grafico-heading">Gráficos</span>
+            <span class="hint">Os gráficos usam apenas as leituras informadas.</span>
+          </span>
+          <span class="collapse-indicator" aria-hidden="true"></span>
+        </summary>
         <div class="chart-controls">
           <div class="tabs" role="tablist" aria-label="Tipo de gráfico">
             <button type="button" role="tab" id="tab-curve" data-view="curve" aria-selected="true" aria-controls="chart-host">pH × volume</button>
             <button type="button" role="tab" id="tab-derivative" data-view="derivative" aria-selected="false" aria-controls="chart-host">ΔpH/ΔV</button>
           </div>
-          <button type="button" id="download-svg" disabled>Baixar SVG</button>
-          <button type="button" id="export-settings">Exportar ajustes</button>
-          <button type="button" id="import-settings">Importar ajustes</button>
+          <details class="action-menu chart-actions-menu" id="chart-actions-menu">
+            <summary>Exportar e imprimir <span class="menu-caret" aria-hidden="true"></span></summary>
+            <div class="chart-menu-content">
+              <button type="button" id="download-svg" disabled>Baixar SVG</button>
+              <button type="button" id="export-settings">Exportar ajustes</button>
+              <button type="button" id="import-settings">Importar ajustes</button>
+              <button type="button" class="quiet" id="print-chart">Imprimir</button>
+            </div>
+          </details>
           <input class="visually-hidden" type="file" id="settings-file" accept=".json,application/json" tabindex="-1">
-          <button type="button" class="quiet" id="print-chart">Imprimir</button>
         </div>
-        <details class="customization" id="customization">
+        <details class="customization" id="customization" data-persist-open>
           <summary>Personalizar gráficos</summary>
           <p class="customization-intro">Campos vazios usam escala automática. Intervalo mínimo: 0,001.</p>
           <div class="custom-grid">
@@ -238,7 +266,7 @@
             <div class="stat"><span class="stat-label">Variações calculáveis</span><span id="stat-slopes" class="stat-value">0</span></div>
           </div>
           <p id="chart-explanation" class="chart-explanation">O gráfico conecta os pontos informados. A linha não representa uma previsão científica.</p>
-          <details>
+          <details id="csv-import-help" data-persist-open>
             <summary>Formato para importar dados de uma planilha</summary>
             <p>CSV separado por ponto e vírgula, com cabeçalho. Série é opcional; volume e pH são obrigatórios.</p>
             <code class="csv-example">Série;Volume (mL);pH
@@ -249,10 +277,22 @@ Amostra B;0;6,8
 Amostra B;1;6,9</code>
           </details>
         </div>
-      </section>
+      </details>
     </div>
 
-    <aside class="page-note"><strong>Nota:</strong> gráficos baseados nos dados informados; não simulam a titulação nem estimam leituras ausentes.</aside>
+    <div class="workspace-footer">
+      <aside class="page-note"><strong>Nota:</strong> gráficos baseados nos dados informados; não simulam a titulação nem estimam leituras ausentes.</aside>
+      <details class="keyboard-help" id="keyboard-help">
+        <summary>Atalhos de teclado</summary>
+        <dl>
+          <div><dt>Ctrl/Cmd + Z</dt><dd>Desfazer alteração (fora dos campos de texto)</dd></div>
+          <div><dt>Ctrl/Cmd + Shift + Z ou Y</dt><dd>Refazer alteração (fora dos campos de texto)</dd></div>
+          <div><dt>Ctrl/Cmd + Enter</dt><dd>Adicionar leitura</dd></div>
+          <div><dt>Ctrl/Cmd + Shift + E</dt><dd>Exportar CSV</dd></div>
+          <div><dt>Esc</dt><dd>Fechar menus abertos</dd></div>
+        </dl>
+      </details>
+    </div>
   </main>
 
   
