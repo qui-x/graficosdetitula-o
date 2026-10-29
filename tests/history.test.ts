@@ -49,8 +49,8 @@ describe("SnapshotHistory", () => {
     history.record({ rows: 2, title: "B" });
     history.record({ rows: 3, title: "C" });
     history.record({ rows: 4, title: "D" });
-    expect(history.undo({ rows: 5, title: "E" })).toEqual({ rows: 3, title: "C" });
-    expect(history.undo({ rows: 3, title: "C" })).toEqual({ rows: 2, title: "B" });
+    expect(history.undo({ rows: 5, title: "E" })).toEqual({ rows: 4, title: "D" });
+    expect(history.undo({ rows: 4, title: "D" })).toEqual({ rows: 3, title: "C" });
     expect(history.canUndo).toBe(false);
   });
 
