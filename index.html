@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#101d2b">
   <meta name="description" content="Editor local e independente para inserir leituras manualmente e gerar gráficos de pH por volume e ΔpH/ΔV.">
   <title>Gráficos de investigação — editor manual</title>
   <style>
@@ -22,6 +23,7 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
+    html { font-size: calc(16px * var(--font-scale, 1)); }
     html { scroll-behavior: smooth; }
     body {
       min-height: 100vh; margin: 0; overflow-x: hidden;
@@ -50,7 +52,9 @@
       box-shadow: 0 10px 34px #0002;
     }
     .topbar-inner, main { width: min(1500px, 100%); margin: 0 auto; }
-    .brand { display: flex; align-items: center; gap: 0.9rem; }
+    .topbar-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.8rem; }
+    .brand { display: flex; align-items: center; gap: 0.9rem; min-width: 0; }
+    .topbar-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 0.65rem; margin-left: auto; }
     .brand-mark {
       flex: 0 0 46px; width: 46px; height: 46px; display: grid; place-items: center;
       border-radius: 13px; background: #1d4154; color: var(--accent); font-size: 1.45rem; font-weight: 800;
@@ -282,6 +286,120 @@
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
 
+
+    /* Acessibilidade adaptada do núcleo A11Y do SIAB para este HTML único. */
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #edf3f8; --panel: #ffffff; --panel-soft: #f4f7fb; --line: #c4d1dd;
+      --text: #142a3e; --muted: #435a70; --accent: #006e89; --accent-strong: #deeff5;
+      --danger: #9b2037;
+    }
+    :root[data-theme="light"] body { background: var(--bg); }
+    :root[data-theme="light"] .topbar { background: linear-gradient(115deg, #f8fbfd, #e8f0f6); border-color: #b9c8d6; }
+    :root[data-theme="light"] .brand-mark { background: #dcecf4; color: #075e7a; border-color: #b4d5e2; }
+    :root[data-theme="light"] .panel { background: #fff; border-color: #c5d3df; box-shadow: 0 8px 22px #1737520b; }
+    :root[data-theme="light"] .panel-head { background: linear-gradient(110deg, #f5f9fc, #eaf1f7); }
+    :root[data-theme="light"] .data-toolbar button,
+    :root[data-theme="light"] button { background: #edf3f8; color: #142a3e; border-color: #a9bbcb; }
+    :root[data-theme="light"] button.primary { background: #006e89; border-color: #006e89; color: #fff; }
+    :root[data-theme="light"] .data-toolbar .quiet { background: #f4f7fb; }
+    :root[data-theme="light"] .data-overview-card,
+    :root[data-theme="light"] .settings-group,
+    :root[data-theme="light"] .series-color-panel { background: #f8fafc; border-color: #cbd7e2; }
+    :root[data-theme="light"] .data-overview-value { color: #142a3e; }
+    :root[data-theme="light"] .table-scroll th { background: #eaf1f7; color: #314a60; border-color: #cbd7e2; }
+    :root[data-theme="light"] .table-scroll td { border-color: #e0e7ee; }
+    :root[data-theme="light"] .table-scroll tbody tr:nth-child(even) td { background: #f7f9fb; }
+    :root[data-theme="light"] .table-scroll tbody tr:hover td,
+    :root[data-theme="light"] .table-scroll tbody tr:focus-within td { background: #e9f5f8; }
+    :root[data-theme="light"] .row-index { background: #e7eff6; border-color: #c4d3df; color: #28445b; }
+    :root[data-theme="light"] .table-scroll td input,
+    :root[data-theme="light"] .setting-field input,
+    :root[data-theme="light"] .setting-field select { background: #fff; color: #142a3e; border-color: #aabaca; }
+    :root[data-theme="light"] .table-scroll td input:focus { background: #f4fbfd; }
+    :root[data-theme="light"] .validation { color: #2e485f; background: #eff7fb; border-color: #c5dce8; }
+    :root[data-theme="light"] .settings-status { color: #2e485f; background: #eff7fb; }
+    :root[data-theme="light"] .csv-example { background: #f1f5f9; color: #142a3e; }
+    :root[data-theme="light"] .a11y-trigger,
+    :root[data-theme="light"] .a11y-panel { color: #142a3e; background: #fff; border-color: #becdd9; }
+    :root[data-theme="light"] .a11y-trigger { background: #edf3f8; }
+    :root[data-theme="light"] .a11y-row:hover { background: #eef5f9; }
+
+    :root[data-contrast="on"] {
+      color-scheme: dark;
+      --bg: #000; --panel: #000; --panel-soft: #000; --line: #fff;
+      --text: #fff; --muted: #fff; --accent: #ff0; --accent-strong: #1d1d00;
+      --danger: #ffb5b5;
+    }
+    :root[data-contrast="on"] body,
+    :root[data-contrast="on"] .topbar,
+    :root[data-contrast="on"] .panel,
+    :root[data-contrast="on"] .panel-head,
+    :root[data-contrast="on"] .data-overview-card,
+    :root[data-contrast="on"] .settings-group,
+    :root[data-contrast="on"] .series-color-panel,
+    :root[data-contrast="on"] .settings-status,
+    :root[data-contrast="on"] .validation,
+    :root[data-contrast="on"] .a11y-panel,
+    :root[data-contrast="on"] .a11y-trigger { background: #000 !important; color: #fff !important; border-color: #fff !important; }
+    :root[data-contrast="on"] button,
+    :root[data-contrast="on"] input,
+    :root[data-contrast="on"] select { background: #000 !important; color: #fff !important; border-color: #fff !important; }
+    :root[data-contrast="on"] button.primary { background: #ff0 !important; color: #000 !important; border-color: #ff0 !important; }
+    :root[data-contrast="on"] .data-overview-value { color: #ff0 !important; }
+    :root[data-contrast="on"] .table-scroll th,
+    :root[data-contrast="on"] .table-scroll td,
+    :root[data-contrast="on"] .table-scroll tbody tr:nth-child(even) td { background: #000 !important; border-color: #fff !important; color: #fff !important; }
+    :root[data-contrast="on"] .row-index { background: #000; color: #ff0; border-color: #fff; }
+
+    :root[data-spacing="on"] body :not(svg, svg *) { letter-spacing: .12em !important; word-spacing: .16em !important; }
+    :root[data-spacing="on"] body { line-height: 1.7; }
+    :root[data-reading="on"] { --muted: var(--text); }
+    :root[data-reading="on"] body { line-height: 1.65; }
+    :root[data-reading="on"] body * { text-shadow: none !important; }
+    :root[data-motion="on"] *, :root[data-motion="on"] *::before, :root[data-motion="on"] *::after {
+      animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important; scroll-behavior: auto !important;
+    }
+
+    .skip-link { position: fixed; z-index: 10002; top: -100px; left: 12px; padding: .75rem 1rem; border: 2px solid var(--accent); border-radius: 10px; background: var(--panel); color: var(--text); font-weight: 750; }
+    .skip-link:focus { top: calc(12px + env(safe-area-inset-top)); }
+    .a11y-menu { position: relative; margin: 0; color: var(--text); }
+    .a11y-trigger { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: .5rem; padding: .55rem .8rem; border: 1px solid #426179; border-radius: 11px; background: #172a3c; color: var(--text); list-style: none; white-space: nowrap; cursor: pointer; }
+    .a11y-trigger::-webkit-details-marker { display: none; }
+    .a11y-trigger::marker { content: ""; }
+    .a11y-trigger svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .a11y-menu[open] > .a11y-trigger { border-color: var(--accent); background: var(--accent-strong); }
+    .a11y-panel { position: absolute; z-index: 10001; top: calc(100% + 10px); right: 0; width: min(360px, calc(100vw - 1.5rem)); max-height: min(76vh, 680px); overflow: auto; padding: .85rem; border: 1px solid #385269; border-radius: 14px; background: #101f2e; color: var(--text); box-shadow: 0 18px 48px #0008; }
+    .a11y-panel-title { margin: 0; font-size: 1rem; }
+    .a11y-panel-description { margin: .2rem 0 .65rem; font-size: .78rem; color: var(--muted); }
+    .a11y-row { display: flex; align-items: center; justify-content: space-between; gap: .65rem; min-width: 0; min-height: 44px; margin: 0; padding: .4rem .15rem; border-radius: 8px; cursor: pointer; }
+    .a11y-row:hover { background: #ffffff08; }
+    .a11y-row-label { display: flex; align-items: center; gap: .45rem; min-width: 0; font-size: .84rem; font-weight: 600; }
+    .a11y-row-select { cursor: default; }
+    .a11y-row select { width: auto; max-width: 144px; min-width: 0; min-height: 40px; padding: .35rem .45rem; border: 1px solid #496077; border-radius: 8px; background: #0e1b29; color: var(--text); font: inherit; font-size: .78rem; }
+    .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex: 0 0 42px; }
+    .switch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
+    .switch .track { position: absolute; inset: 0; background: #263b4e; box-shadow: inset 0 0 0 1px #7890a5; border-radius: 999px; pointer-events: none; }
+    .switch .thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
+    .switch input:checked + .track { background: var(--accent); box-shadow: none; }
+    .switch input:checked + .track .thumb { transform: translateX(18px); background: #0b1420; }
+    .switch input:focus-visible + .track { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .a11y-font-row { cursor: default; }
+    .fontstep { display: flex; align-items: center; gap: .3rem; flex: none; }
+    .fontstep-btn { min-width: 42px; min-height: 42px; padding: .25rem; border: 1px solid #496077; border-radius: 8px; font-size: .8rem; font-weight: 750; }
+    .fontstep output { min-width: 3.2em; text-align: center; font-variant-numeric: tabular-nums; font-size: .78rem; }
+    .a11y-status { margin: .6rem 0; padding: .55rem .6rem; border-left: 3px solid var(--accent); background: #0d1a27; color: var(--muted); font-size: .76rem; }
+    .a11y-reset { width: 100%; font-size: .8rem; }
+    #colorblindOverlay { position: fixed; z-index: 9999; inset: 0; pointer-events: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+    @media (max-width: 560px) {
+      .topbar-inner { align-items: flex-start; }
+      .topbar-actions { width: 100%; justify-content: space-between; margin-left: 0; gap: .45rem; }
+      .scope { margin: 0; align-self: center; }
+      .a11y-trigger { min-width: 44px; padding: .5rem .6rem; font-size: .78rem; }
+      .a11y-panel { position: fixed; top: calc(10px + env(safe-area-inset-top)); right: .65rem; max-height: calc(100dvh - 20px - env(safe-area-inset-top)); }
+    }
+
     @media print {
       :root { color-scheme: light; --bg: #fff; --panel: #fff; --panel-soft: #fff; --line: #cbd3da; --text: #111; --muted: #333; }
       body { background: #fff; color: #111; }
@@ -301,25 +419,91 @@
   </style>
 </head>
 <body>
+  <svg class="a11y-filters" width="0" height="0" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="f-protanopia"><feColorMatrix type="matrix" values="0.567 0.433 0 0 0 0.558 0.442 0 0 0 0 0.242 0.758 0 0 0 0 0 1 0"/></filter>
+      <filter id="f-deuteranopia"><feColorMatrix type="matrix" values="0.625 0.375 0 0 0 0.7 0.3 0 0 0 0 0.3 0.7 0 0 0 0 0 1 0"/></filter>
+      <filter id="f-tritanopia"><feColorMatrix type="matrix" values="0.95 0.05 0 0 0 0 0.433 0.567 0 0 0 0.475 0.525 0 0 0 0 0 1 0"/></filter>
+      <filter id="f-acromatopsia"><feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0 0.299 0.587 0.114 0 0 0 0.299 0.587 0.114 0 0 0 0 0 1 0"/></filter>
+    </defs>
+  </svg>
+  <div id="colorblindOverlay" aria-hidden="true"></div>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">Δ</div>
         <div>
           <h1>Gráficos de investigação</h1>
-          <p class="subtitle">Editor manual de dados experimentais · arquivo único e offline</p>
+          <p class="subtitle">Editor manual · funciona offline</p>
         </div>
       </div>
-      <span class="scope">Somente leituras inseridas por você · sem simulação química</span>
+      <div class="topbar-actions">
+        <span class="scope">Dados manuais · sem simulação</span>
+        <details class="a11y-menu" id="a11y-menu">
+          <summary class="a11y-trigger" id="a11y-trigger" aria-controls="a11y-panel" aria-label="Abrir preferências de acessibilidade" title="Acessibilidade">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="8" r="1.4"/><path d="M6.5 10.5 12 12l5.5-1.5M12 12v5m0-5-3 5m3-5 3 5"/></svg>
+            <span>Acessibilidade</span>
+          </summary>
+          <div class="a11y-panel" id="a11y-panel" role="group" aria-labelledby="a11y-heading">
+            <h2 class="a11y-panel-title" id="a11y-heading">Acessibilidade</h2>
+            <p class="a11y-panel-description">Ajustes visuais e de leitura.</p>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Modo escuro</span></span>
+              <span class="switch"><input id="a11y-theme" type="checkbox" role="switch" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Alto contraste</span></span>
+              <span class="switch"><input id="a11y-contrast" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <div class="a11y-row a11y-font-row">
+              <span class="a11y-row-label"><span>Tamanho do texto</span></span>
+              <span class="fontstep">
+                <button type="button" id="a11y-font-minus" class="fontstep-btn" aria-label="Diminuir tamanho do texto">A−</button>
+                <output id="a11y-font-output" aria-live="polite">100%</output>
+                <button type="button" id="a11y-font-plus" class="fontstep-btn" aria-label="Aumentar tamanho do texto">A+</button>
+              </span>
+            </div>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Espaçamento de texto</span></span>
+              <span class="switch"><input id="a11y-spacing" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Leitura simples</span></span>
+              <span class="switch"><input id="a11y-reading" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Reduzir movimento</span></span>
+              <span class="switch"><input id="a11y-motion" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <label class="a11y-row a11y-row-select" for="a11y-colorblind">
+              <span class="a11y-row-label"><span>Visão de cores</span></span>
+              <select id="a11y-colorblind" aria-label="Simulação de visão de cores">
+                <option value="none">Normal</option>
+                <option value="protanopia">Protanopia</option>
+                <option value="deuteranopia">Deuteranopia</option>
+                <option value="tritanopia">Tritanopia</option>
+                <option value="acromatopsia">Escala de cinza</option>
+              </select>
+            </label>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Tradutor de Libras (VLibras)</span></span>
+              <span class="switch"><input id="a11y-libras" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <p id="a11y-status" class="a11y-status" role="status" aria-live="polite">Preferências salvas no navegador quando permitido.</p>
+            <button type="button" id="a11y-reset" class="a11y-reset">Restaurar padrão</button>
+          </div>
+        </details>
+      </div>
     </div>
   </header>
 
-  <main>
+  <main id="conteudo" tabindex="-1">
     <div class="layout">
       <section class="panel" aria-labelledby="dados-heading">
         <div class="panel-head">
-          <h2 id="dados-heading">1. Editar dados</h2>
-          <p class="hint">Digite ou altere diretamente o nome da série, o volume adicionado e o pH medido. O gráfico acompanha as alterações.</p>
+          <h2 id="dados-heading">Dados</h2>
+          <p class="hint">Edite série, volume e pH; os gráficos atualizam automaticamente.</p>
         </div>
         <div class="data-toolbar" aria-label="Ações dos dados">
           <div class="data-toolbar-primary">
@@ -363,8 +547,8 @@
 
       <section class="panel" aria-labelledby="grafico-heading">
         <div class="panel-head">
-          <h2 id="grafico-heading">2. Visualizar gráfico</h2>
-          <p class="hint">Os eixos são calculados a partir dos dados válidos. Nenhuma curva é prevista ou gerada por um modelo químico.</p>
+          <h2 id="grafico-heading">Gráficos</h2>
+          <p class="hint">Os gráficos usam apenas as leituras informadas.</p>
         </div>
         <div class="chart-controls">
           <div class="tabs" role="tablist" aria-label="Tipo de gráfico">
@@ -372,14 +556,14 @@
             <button type="button" role="tab" id="tab-derivative" data-view="derivative" aria-selected="false" aria-controls="chart-host">ΔpH/ΔV</button>
           </div>
           <button type="button" id="download-svg" disabled>Baixar SVG</button>
-          <button type="button" id="export-settings">Exportar configurações</button>
-          <button type="button" id="import-settings">Importar configurações</button>
+          <button type="button" id="export-settings">Exportar ajustes</button>
+          <button type="button" id="import-settings">Importar ajustes</button>
           <input class="visually-hidden" type="file" id="settings-file" accept=".json,application/json" tabindex="-1">
           <button type="button" class="quiet" id="print-chart">Imprimir</button>
         </div>
         <details class="customization" id="customization">
-          <summary>Personalizar títulos, eixos e aparência</summary>
-          <p class="customization-intro">Limites vazios usam o ajuste automático. Informe os limites e o intervalo em casas decimais de até 0,001. Para ver uma faixa muito estreita, ajuste início, fim e intervalo do eixo.</p>
+          <summary>Personalizar gráficos</summary>
+          <p class="customization-intro">Campos vazios usam escala automática. Intervalo mínimo: 0,001.</p>
           <div class="custom-grid">
             <fieldset class="settings-group">
               <legend>pH × volume</legend>
@@ -448,7 +632,7 @@
           <p id="chart-explanation" class="chart-explanation">O gráfico conecta os pontos informados. A linha não representa uma previsão científica.</p>
           <details>
             <summary>Formato para importar dados de uma planilha</summary>
-            <p>Use um arquivo CSV separado por ponto e vírgula, com cabeçalho. A coluna Série é opcional; o volume e o pH são necessários. Também é possível usar duas colunas (Volume e pH).</p>
+            <p>CSV separado por ponto e vírgula, com cabeçalho. Série é opcional; volume e pH são obrigatórios.</p>
             <code class="csv-example">Série;Volume (mL);pH
 Amostra A;0;3,2
 Amostra A;1;3,5
@@ -460,10 +644,7 @@ Amostra B;1;6,9</code>
       </section>
     </div>
 
-    <aside class="page-note">
-      <strong>Escopo desta ferramenta.</strong>
-      Este HTML independente aproveita a ideia de representação dos registros experimentais do painel <em>Investigar → Analisar</em>: gráfico pH × volume e variação ΔpH/ΔV. Não contém titulação interativa, recipientes, gotas, indicador, cálculo de equivalência, distribuição de espécies ou qualquer dependência do SIAB. O resultado é derivado exclusivamente dos valores digitados ou importados.
-    </aside>
+    <aside class="page-note"><strong>Nota:</strong> gráficos baseados nos dados informados; não simulam a titulação nem estimam leituras ausentes.</aside>
   </main>
 
   <script>
@@ -808,7 +989,7 @@ Amostra B;1;6,9</code>
         downloadSvgButton.disabled = false;
         buildLegend(names);
         chartTitle.textContent = config.title;
-        chartExplanation.textContent = "Os pontos representam as leituras inseridas. A linha apenas conecta registros na mesma sequência; não representa uma curva teórica. Pontos fora dos limites manuais do gráfico ficam fora da área visível.";
+        chartExplanation.textContent = "Pontos inseridos; a linha apenas conecta leituras. Pontos fora dos limites não aparecem.";
       }
       function renderDerivative(segments) {
         var slopes = getSlopes(segments);
@@ -816,7 +997,7 @@ Amostra B;1;6,9</code>
         if (!slopes.length) {
           emptyMessage("Ainda não há variações calculáveis", "Informe ao menos duas leituras válidas, na mesma sequência, com volumes diferentes. A ferramenta calcula ΔpH/ΔV entre pontos consecutivos.");
           chartTitle.textContent = config.title;
-          chartExplanation.textContent = "Cada valor é calculado como (pH atual − pH anterior) ÷ (volume atual − volume anterior), em pH/mL. Valores negativos indicam queda do pH.";
+          chartExplanation.textContent = "ΔpH/ΔV usa duas leituras consecutivas, em pH/mL. Valores negativos indicam queda do pH.";
           return;
         }
         var plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
@@ -860,7 +1041,7 @@ Amostra B;1;6,9</code>
         downloadSvgButton.disabled = false;
         buildLegend(names);
         chartTitle.textContent = config.title;
-        chartExplanation.textContent = "Cada ponto usa duas leituras consecutivas: ΔpH/ΔV = (pH atual − pH anterior) ÷ (volume atual − volume anterior). O valor é associado ao volume da segunda leitura. Valores negativos indicam queda de pH. Pontos fora dos limites manuais ficam fora da área visível.";
+        chartExplanation.textContent = "ΔpH/ΔV é calculado entre leituras consecutivas. Valores negativos indicam queda do pH.";
       }
       function renderAll() {
         var state = getPointState();
@@ -1136,5 +1317,167 @@ Amostra B;1;6,9</code>
       renderAll();
     })();
   </script>
+<script>
+  /* Preferências A11Y adaptadas do SIAB; o editor continua independente. */
+  (function () {
+    "use strict";
+    var root = document.documentElement;
+    var storageKey = "graficos_titulacao_a11y_v1";
+    var defaults = { theme: "dark", contrast: false, fontScale: 1, spacing: false, reading: false, motion: false, colorblind: "none", libras: false };
+    var state = Object.assign({}, defaults);
+    var allowedColorModes = ["none", "protanopia", "deuteranopia", "tritanopia", "acromatopsia"];
+    var colorLayer = document.getElementById("colorblindOverlay");
+    var status = document.getElementById("a11y-status");
+    var librasScript = null;
+
+    function clampFont(value) {
+      var n = Number(value);
+      if (!Number.isFinite(n)) n = 1;
+      return Math.max(0.75, Math.min(2, Math.round(n * 100) / 100));
+    }
+    function normalize(source) {
+      var result = Object.assign({}, defaults, source || {});
+      result.theme = result.theme === "light" ? "light" : "dark";
+      result.contrast = result.contrast === true;
+      result.fontScale = clampFont(result.fontScale);
+      ["spacing", "reading", "motion", "libras"].forEach(function (key) { result[key] = result[key] === true; });
+      result.colorblind = allowedColorModes.indexOf(result.colorblind) >= 0 ? result.colorblind : "none";
+      return result;
+    }
+    function readPrefs() {
+      try {
+        var saved = localStorage.getItem(storageKey);
+        if (saved) state = normalize(JSON.parse(saved));
+      } catch (error) { state = Object.assign({}, defaults); }
+    }
+    function savePrefs() {
+      try { localStorage.setItem(storageKey, JSON.stringify(state)); return true; }
+      catch (error) { return false; }
+    }
+    function updateStatus(message) {
+      if (message) status.textContent = message;
+    }
+    function syncControls() {
+      document.getElementById("a11y-theme").checked = state.theme === "dark";
+      document.getElementById("a11y-contrast").checked = state.contrast;
+      document.getElementById("a11y-font-output").textContent = Math.round(state.fontScale * 100) + "%";
+      document.getElementById("a11y-font-minus").disabled = state.fontScale <= 0.75;
+      document.getElementById("a11y-font-plus").disabled = state.fontScale >= 2;
+      document.getElementById("a11y-spacing").checked = state.spacing;
+      document.getElementById("a11y-reading").checked = state.reading;
+      document.getElementById("a11y-motion").checked = state.motion;
+      document.getElementById("a11y-colorblind").value = state.colorblind;
+      document.getElementById("a11y-libras").checked = state.libras;
+    }
+    function applyState() {
+      root.setAttribute("data-theme", state.theme);
+      root.setAttribute("data-contrast", state.contrast ? "on" : "off");
+      root.setAttribute("data-spacing", state.spacing ? "on" : "off");
+      root.setAttribute("data-reading", state.reading ? "on" : "off");
+      root.setAttribute("data-motion", state.motion ? "on" : "off");
+      root.setAttribute("data-colorblind", state.colorblind);
+      root.style.setProperty("--font-scale", state.fontScale);
+      root.style.setProperty("--a11y-font-scale", state.fontScale);
+      root.style.colorScheme = state.contrast ? "dark" : state.theme;
+      var themeColor = document.querySelector('meta[name="theme-color"]');
+      if (themeColor) themeColor.setAttribute("content", state.contrast ? "#000000" : state.theme === "light" ? "#edf3f8" : "#101d2b");
+      if (colorLayer) {
+        var filter = state.colorblind === "none" ? "none" : "url(#f-" + state.colorblind + ")";
+        colorLayer.style.backdropFilter = filter;
+        colorLayer.style.webkitBackdropFilter = filter;
+      }
+      syncControls();
+    }
+    function setPreference(key, value, message) {
+      var next = Object.assign({}, state);
+      next[key] = value;
+      state = normalize(next);
+      applyState();
+      var saved = savePrefs();
+      updateStatus(message || (saved ? "Preferência aplicada." : "Aplicada nesta sessão; o navegador não permitiu salvar."));
+    }
+    function loadLibras() {
+      if (document.getElementById("vlibras-script")) {
+        updateStatus("VLibras já foi solicitado.");
+        return;
+      }
+      if (navigator.onLine === false) {
+        setPreference("libras", false, "VLibras precisa de internet.");
+        return;
+      }
+      var widget = document.createElement("div");
+      widget.setAttribute("vw", "");
+      widget.className = "enabled";
+      widget.id = "vlibras-widget";
+      widget.innerHTML = '<div vw-access-button class="active"></div><div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>';
+      document.body.appendChild(widget);
+      var script = document.createElement("script");
+      script.id = "vlibras-script";
+      script.src = "https://vlibras.gov.br/app/vlibras-plugin.js";
+      librasScript = script;
+      script.onload = function () {
+        try {
+          if (!window.VLibras || !window.VLibras.Widget) throw new Error("VLibras indisponível");
+          new window.VLibras.Widget("https://vlibras.gov.br/app");
+          updateStatus("VLibras ativado.");
+        } catch (error) {
+          widget.remove();
+          setPreference("libras", false, "VLibras não pôde ser iniciado.");
+        }
+      };
+      script.onerror = function () {
+        widget.remove();
+        script.remove();
+        setPreference("libras", false, "VLibras indisponível. Verifique a conexão.");
+      };
+      document.body.appendChild(script);
+      updateStatus("Carregando VLibras…");
+    }
+    function disableLibras() {
+      var widget = document.getElementById("vlibras-widget");
+      if (widget) widget.remove();
+      updateStatus("Painel VLibras ocultado. Recarregue para reiniciar o tradutor.");
+    }
+
+    readPrefs();
+    applyState();
+    window.A11Y = {
+      estado: state,
+      state: state,
+      definir: function (key, value) { setPreference(key, value); this.estado = state; this.state = state; },
+      restaurar: function () {
+        state = Object.assign({}, defaults);
+        applyState();
+        savePrefs();
+        this.estado = state;
+        this.state = state;
+        updateStatus("Preferências restauradas.");
+      }
+    };
+    document.getElementById("a11y-theme").addEventListener("change", function (event) { setPreference("theme", event.target.checked ? "dark" : "light"); window.A11Y.estado = window.A11Y.state = state; });
+    document.getElementById("a11y-contrast").addEventListener("change", function (event) { setPreference("contrast", event.target.checked); window.A11Y.estado = window.A11Y.state = state; });
+    document.getElementById("a11y-spacing").addEventListener("change", function (event) { setPreference("spacing", event.target.checked); window.A11Y.estado = window.A11Y.state = state; });
+    document.getElementById("a11y-reading").addEventListener("change", function (event) { setPreference("reading", event.target.checked); window.A11Y.estado = window.A11Y.state = state; });
+    document.getElementById("a11y-motion").addEventListener("change", function (event) { setPreference("motion", event.target.checked); window.A11Y.estado = window.A11Y.state = state; });
+    document.getElementById("a11y-colorblind").addEventListener("change", function (event) { setPreference("colorblind", event.target.value); window.A11Y.estado = window.A11Y.state = state; });
+    document.getElementById("a11y-font-minus").addEventListener("click", function () { setPreference("fontScale", clampFont((state.fontScale - 0.1).toFixed(2))); window.A11Y.estado = window.A11Y.state = state; });
+    document.getElementById("a11y-font-plus").addEventListener("click", function () { setPreference("fontScale", clampFont((state.fontScale + 0.1).toFixed(2))); window.A11Y.estado = window.A11Y.state = state; });
+    document.getElementById("a11y-libras").addEventListener("change", function (event) {
+      if (event.target.checked) setPreference("libras", true);
+      else { setPreference("libras", false); disableLibras(); }
+      window.A11Y.estado = window.A11Y.state = state;
+      if (state.libras) loadLibras();
+    });
+    document.getElementById("a11y-reset").addEventListener("click", function () {
+      if (state.libras) disableLibras();
+      state = Object.assign({}, defaults);
+      applyState();
+      savePrefs();
+      window.A11Y.estado = window.A11Y.state = state;
+      updateStatus("Preferências restauradas.");
+    });
+    if (state.libras) loadLibras();
+  })();
+</script>
 </body>
 </html>
