@@ -73,21 +73,56 @@
     h2 { margin: 0; font-size: 1.08rem; }
     h3 { margin: 0; font-size: 0.95rem; }
     .hint { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.86rem; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.85rem 1rem; }
-    .toolbar button { font-size: 0.88rem; }
-    .table-scroll { max-width: 100%; overflow-x: auto; padding: 0 1rem 1rem; }
-    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.86rem; }
-    th { padding: 0.65rem 0.45rem; color: var(--muted); text-align: left; font-size: 0.78rem; font-weight: 650; }
-    td { padding: 0.45rem; border-top: 1px solid var(--line); vertical-align: middle; }
-    td input {
-      width: 100%; min-width: 74px; min-height: 42px; padding: 0.45rem 0.55rem;
-      border: 1px solid #496077; border-radius: 8px; background: #0e1b29; color: var(--text);
+    .data-toolbar { display: grid; gap: 0.45rem; padding: 0.8rem 1rem 0.7rem; }
+    .data-toolbar-primary, .data-toolbar-secondary { display: grid; gap: 0.45rem; }
+    .data-toolbar-primary { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+    .data-toolbar-secondary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .data-toolbar button { min-width: 0; padding-inline: 0.65rem; font-size: 0.81rem; overflow-wrap: anywhere; }
+    .data-toolbar .primary { box-shadow: 0 4px 12px #72d8ef18; }
+    .data-toolbar .quiet { background: #142333; }
+    .data-toolbar .danger { color: #ffb5b5; }
+    .data-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.45rem; padding: 0 1rem 0.85rem; }
+    .data-overview-card { display: flex; flex-direction: column; gap: 0.12rem; min-width: 0; padding: 0.55rem 0.6rem; border: 1px solid #30465a; border-radius: 10px; background: #101f2e99; }
+    .data-overview-label { color: var(--muted); font-size: 0.68rem; font-weight: 650; letter-spacing: 0.025em; }
+    .data-overview-value { color: var(--text); font-size: 1.15rem; font-weight: 760; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .data-overview-card[data-state="alert"] .data-overview-value { color: #ffd29b; }
+    .data-overview-card[data-state="normal"] .data-overview-value { color: #9fe0ce; }
+    .table-scroll { max-width: 100%; min-width: 0; overflow-x: auto; padding: 0 1rem 0.85rem; }
+    .table-scroll table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 0.84rem; }
+    .table-scroll th { position: sticky; top: 0; z-index: 1; padding: 0.65rem 0.42rem; border-bottom: 1px solid #3a5369; background: #122233; color: #c3d0dd; text-align: left; font-size: 0.72rem; font-weight: 700; line-height: 1.25; }
+    .table-scroll th:first-child { width: 42px; text-align: center; }
+    .table-scroll th:nth-child(2) { width: 35%; }
+    .table-scroll th:nth-child(3) { width: 25%; }
+    .table-scroll th:nth-child(4) { width: 17%; }
+    .table-scroll th:last-child { width: 46px; }
+    .th-unit { display: block; margin-top: 0.12rem; color: #89a3b9; font-size: 0.66rem; font-weight: 500; }
+    .table-scroll td { padding: 0.38rem 0.32rem; border-bottom: 1px solid #293e51; vertical-align: middle; transition: background-color 120ms ease; }
+    .table-scroll tbody tr:nth-child(even) td { background: #ffffff04; }
+    .table-scroll tbody tr:hover td, .table-scroll tbody tr:focus-within td { background: #72d8ef0b; }
+    .row-index-cell { text-align: center; }
+    .row-index { display: inline-flex; width: 27px; height: 27px; align-items: center; justify-content: center; border: 1px solid #3b5268; border-radius: 8px; background: #1b3043; color: #bcd0df; font-size: 0.68rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .series-edit { display: flex; align-items: center; gap: 0.45rem; min-width: 0; }
+    .series-swatch { flex: 0 0 8px; width: 8px; height: 28px; border-radius: 5px; background: var(--series-color, #087eaa); box-shadow: 0 0 0 2px #ffffff08; }
+    .series-input-wrap { display: block; min-width: 0; flex: 1; }
+    .table-scroll td input {
+      display: block; width: 100%; min-width: 0; min-height: 42px; padding: 0.45rem 0.5rem;
+      border: 1px solid #40566b; border-radius: 8px; background: #0d1a27; color: var(--text);
+      font-variant-numeric: tabular-nums; transition: border-color 120ms ease, background-color 120ms ease;
     }
-    td input.series-input { min-width: 102px; }
-    td input[aria-invalid="true"] { border-color: #ff8a8a; }
-    .remove-btn { min-width: 42px; min-height: 42px; padding: 0.2rem; }
-    .data-note { padding: 0 1rem 1rem; color: var(--muted); font-size: 0.82rem; }
-    .validation { margin: 0 1rem 1rem; padding: 0.7rem 0.8rem; border-left: 3px solid #577990; background: #10202f; color: var(--muted); font-size: 0.83rem; }
+    .table-scroll td input:focus { border-color: var(--accent); background: #102538; }
+    .table-scroll td input.series-input { min-width: 0; }
+    .table-scroll td .numeric-input { text-align: right; letter-spacing: 0.01em; }
+    .table-scroll td input[aria-invalid="true"] { border-color: #ff8a8a; background: #301b25; }
+    .numeric-cell { text-align: right; }
+    .remove-btn { display: inline-flex; align-items: center; justify-content: center; width: 42px; min-width: 42px; min-height: 42px; padding: 0.2rem; border-color: transparent; background: transparent; color: #9eb1c3; font-size: 1.25rem; }
+    .remove-btn:hover { border-color: #784c56; background: #472630; color: #ffd0d0; }
+    .data-note { padding: 0 1rem 0.85rem; color: var(--muted); font-size: 0.79rem; line-height: 1.5; }
+    .validation { display: flex; align-items: flex-start; gap: 0.55rem; margin: 0 1rem 1rem; padding: 0.7rem 0.8rem; border: 1px solid #2e465b; border-left: 3px solid #72d8ef; border-radius: 9px; background: linear-gradient(100deg, #122839, #10202f); color: #c6d7e4; font-size: 0.81rem; }
+    .validation::before { content: "i"; display: inline-flex; flex: 0 0 19px; width: 19px; height: 19px; align-items: center; justify-content: center; border-radius: 50%; background: #23475c; color: #a5ebfa; font-size: 0.72rem; font-weight: 800; }
+    .validation[data-state="ready"]::before { content: "✓"; background: #1f493f; color: #b1f3dc; }
+    .validation[data-state="warning"] { border-color: #725234; border-left-color: #e5a45d; background: #2a2118; color: #ffe0b8; }
+    .validation[data-state="warning"]::before { content: "!"; background: #66431d; color: #ffe0b8; }
+    .validation[data-state="ready"] { border-left-color: #5ac5a2; }
     .validation.warn { border-left-color: #e5a45d; color: #ffe0b8; }
     .chart-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.85rem 1rem; border-bottom: 1px solid var(--line); }
     .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-right: auto; }
@@ -176,29 +211,39 @@
       .panel { border-radius: 14px; }
       .panel-head { padding: 0.85rem; }
       .panel-head .hint { font-size: 0.82rem; }
-      .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0.45rem; padding: 0.7rem; }
-      .toolbar button { min-width: 0; width: 100%; padding: 0.55rem 0.45rem; font-size: 0.8rem; overflow-wrap: anywhere; }
+      .data-toolbar { padding: 0.7rem 0.65rem; }
+      .data-toolbar-primary { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); }
+      .data-toolbar-secondary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .data-toolbar button { min-width: 0; width: 100%; padding: 0.55rem 0.4rem; font-size: 0.78rem; overflow-wrap: anywhere; }
+      .data-overview { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.4rem; padding: 0 0.65rem 0.8rem; }
+      .data-overview-card { padding: 0.5rem 0.6rem; }
+      .data-overview-label { font-size: 0.66rem; }
+      .data-overview-value { font-size: 1.05rem; }
       .table-scroll { overflow: visible; padding: 0 0.65rem 0.8rem; }
       .table-scroll table, .table-scroll tbody { display: block; width: 100%; }
       .table-scroll thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
       .table-scroll tbody { display: grid; gap: 0.6rem; }
       .table-scroll tbody tr {
-        display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) 44px; grid-template-rows: auto auto;
-        gap: 0.35rem; min-width: 0; padding: 0.45rem; border: 1px solid #344b61; border-radius: 12px;
-        background: linear-gradient(140deg, #17293a, #122131);
+        display: grid; grid-template-columns: 40px minmax(0,1fr) 44px; grid-template-rows: auto auto;
+        gap: 0.35rem; min-width: 0; padding: 0.55rem; border: 1px solid #344b61; border-radius: 13px;
+        background: linear-gradient(140deg, #17293a, #122131); box-shadow: 0 4px 12px #0001;
       }
-      .table-scroll td { display: flex; flex-direction: column; justify-content: flex-end; gap: 0.25rem; min-width: 0; padding: 0.15rem; border: 0; grid-row: 2; }
-      .table-scroll td::before { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 650; line-height: 1.3; }
-      .table-scroll td:nth-child(1) { grid-column: 1 / -1; grid-row: 1; }
-      .table-scroll td:nth-child(2) { grid-column: 1; }
-      .table-scroll td:nth-child(3) { grid-column: 2; }
-      .table-scroll td:nth-child(4) { grid-column: 3; align-items: center; }
-      .table-scroll td:nth-child(4)::before { content: ""; }
-      .table-scroll td[data-label="Série"]::before { content: "Série"; }
-      .table-scroll td[data-label="Volume (mL)"]::before { content: "Volume (mL)"; }
-      .table-scroll td[data-label="pH"]::before { content: "pH"; }
-      td input, td input.series-input { min-width: 0; width: 100%; min-height: 44px; padding: 0.5rem; font-size: 16px; }
-      .remove-btn { width: 44px; min-width: 44px; min-height: 44px; padding: 0; }
+      .table-scroll td { display: flex; flex-direction: column; justify-content: flex-end; gap: 0.25rem; min-width: 0; padding: 0.12rem; border: 0; grid-row: 2; background: transparent !important; }
+      .table-scroll td::before { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 700; line-height: 1.3; }
+      .table-scroll td:nth-child(1) { grid-column: 1; grid-row: 1; align-items: center; justify-content: center; }
+      .table-scroll td:nth-child(2) { grid-column: 2; grid-row: 1; }
+      .table-scroll td:nth-child(3) { grid-column: 1; grid-row: 2; }
+      .table-scroll td:nth-child(4) { grid-column: 2; grid-row: 2; }
+      .table-scroll td:nth-child(5) { grid-column: 3; grid-row: 1 / span 2; align-self: center; align-items: center; justify-content: center; }
+      .table-scroll td:nth-child(1)::before, .table-scroll td:nth-child(5)::before { content: ""; display: none; }
+      .table-scroll td[data-label="Série / amostra"]::before { content: "Série / amostra"; }
+      .table-scroll td[data-label="Volume (mL)"]::before { content: "Volume · mL"; }
+      .table-scroll td[data-label="pH"]::before { content: "pH medido"; }
+      .row-index { width: 29px; height: 29px; font-size: 0.7rem; }
+      .series-edit { gap: 0.4rem; }
+      .series-swatch { width: 6px; flex-basis: 6px; height: 26px; }
+      .table-scroll td input, .table-scroll td input.series-input { min-width: 0; width: 100%; min-height: 44px; padding: 0.5rem 0.45rem; font-size: 16px; }
+      .table-scroll td .numeric-input { padding-inline: 0.35rem; }
       .data-note { padding: 0 0.75rem 0.85rem; font-size: 0.78rem; }
       .validation { margin: 0 0.65rem 0.8rem; font-size: 0.8rem; }
       .series-color-panel { margin: 0 0.65rem 0.8rem; }
@@ -223,8 +268,9 @@
     @media (max-width: 360px) {
       .settings-grid { grid-template-columns: minmax(0,1fr); }
       .settings-grid .setting-field.wide { grid-column: 1; }
-      .table-scroll tbody tr { grid-template-columns: minmax(0,1fr) minmax(0,1fr) 40px; }
+      .table-scroll tbody tr { grid-template-columns: 36px minmax(0,1fr) 40px; }
       .remove-btn { width: 40px; min-width: 40px; }
+      .data-toolbar-primary, .data-toolbar-secondary { grid-template-columns: minmax(0,1fr); }
       .brand-mark { display: none; }
     }
     @media (hover: none) {
@@ -275,19 +321,31 @@
           <h2 id="dados-heading">1. Editar dados</h2>
           <p class="hint">Digite ou altere diretamente o nome da série, o volume adicionado e o pH medido. O gráfico acompanha as alterações.</p>
         </div>
-        <div class="toolbar" aria-label="Ações dos dados">
-          <button type="button" class="primary" id="add-point">＋ Adicionar ponto</button>
-          <button type="button" id="import-button">Importar CSV</button>
-          <button type="button" id="export-csv">Baixar CSV</button>
-          <button type="button" class="quiet danger" id="clear-data">Limpar dados</button>
+        <div class="data-toolbar" aria-label="Ações dos dados">
+          <div class="data-toolbar-primary">
+            <button type="button" class="primary" id="add-point">＋ Adicionar leitura</button>
+            <button type="button" id="import-button">Importar CSV</button>
+          </div>
+          <div class="data-toolbar-secondary">
+            <button type="button" id="export-csv">Exportar CSV</button>
+            <button type="button" id="load-example">Usar exemplo</button>
+            <button type="button" class="quiet danger" id="clear-data">Limpar dados</button>
+          </div>
           <input class="visually-hidden" type="file" id="import-file" accept=".csv,.txt,.tsv,text/csv,text/plain" tabindex="-1">
+        </div>
+        <div class="data-overview" aria-label="Resumo da tabela de dados">
+          <div class="data-overview-card"><span class="data-overview-label">Linhas</span><strong id="data-row-count" class="data-overview-value">3</strong></div>
+          <div class="data-overview-card"><span class="data-overview-label">Válidos</span><strong id="data-valid-count" class="data-overview-value">0</strong></div>
+          <div class="data-overview-card"><span class="data-overview-label">Séries</span><strong id="data-series-count" class="data-overview-value">0</strong></div>
+          <div class="data-overview-card" id="data-review-card"><span class="data-overview-label">Revisar</span><strong id="data-review-count" class="data-overview-value">0</strong></div>
         </div>
         <div class="table-scroll">
           <table aria-label="Tabela de pontos experimentais">
             <thead>
               <tr>
-                <th scope="col">Série</th>
-                <th scope="col">Volume (mL)</th>
+                <th scope="col" aria-label="Número do ponto">Nº</th>
+                <th scope="col">Série / amostra</th>
+                <th scope="col">Volume <span class="th-unit">adicionado · mL</span></th>
                 <th scope="col">pH</th>
                 <th scope="col"><span class="visually-hidden">Ação</span></th>
               </tr>
@@ -299,11 +357,8 @@
           <legend>Cores das séries</legend>
           <div id="series-colors" class="series-color-list"><p class="hint">As cores aparecerão quando os dados forem preenchidos.</p></div>
         </fieldset>
-        <p class="data-note">Use vírgula ou ponto decimal. O pH válido vai de 0 a 14; o volume deve ser maior ou igual a zero. Linhas incompletas não são plotadas. A entrada e a análise aceitam casas decimais de milésimos (0,001).</p>
-        <p id="validation" class="validation" role="status" aria-live="polite">Preencha volume e pH para inserir pontos no gráfico.</p>
-        <div class="toolbar">
-          <button type="button" id="load-example">Carregar exemplo simples</button>
-        </div>
+        <p class="data-note" id="data-precision-note">Informe uma série, o volume em mL e o pH medido. Use vírgula ou ponto decimal; a análise aceita milésimos (0,001). Linhas incompletas não são plotadas.</p>
+        <p id="validation" class="validation" data-state="empty" role="status" aria-live="polite">Preencha volume e pH para inserir pontos no gráfico.</p>
       </section>
 
       <section class="panel" aria-labelledby="grafico-heading">
@@ -497,14 +552,19 @@ Amostra B;1;6,9</code>
         return { valid: valid, incomplete: incomplete, invalid: invalid };
       }
       function renderRows() {
+        var names = currentSeriesNames();
         rowsEl.innerHTML = points.map(function (point, index) {
+          var seriesName = String(point.series || "").trim() || "Série A";
+          var color = colorFor(seriesName, names);
+          var paddedIndex = String(index + 1).padStart(2, "0");
           return '<tr data-index="' + index + '">' +
-            '<td data-label="Série"><label class="visually-hidden" for="series-' + index + '">Nome da série do ponto ' + (index + 1) + '</label>' +
-            '<input class="series-input" id="series-' + index + '" type="text" data-field="series" maxlength="60" value="' + escapeHTML(point.series) + '" aria-label="Série do ponto ' + (index + 1) + '"></td>' +
-            '<td data-label="Volume (mL)"><label class="visually-hidden" for="volume-' + index + '">Volume do ponto ' + (index + 1) + '</label>' +
-            '<input id="volume-' + index + '" type="text" inputmode="decimal" autocomplete="off" data-field="volume" value="' + escapeHTML(point.volume) + '" aria-label="Volume em mL do ponto ' + (index + 1) + '"></td>' +
-            '<td data-label="pH"><label class="visually-hidden" for="ph-' + index + '">pH do ponto ' + (index + 1) + '</label>' +
-            '<input id="ph-' + index + '" type="text" inputmode="decimal" autocomplete="off" data-field="ph" value="' + escapeHTML(point.ph) + '" aria-label="pH do ponto ' + (index + 1) + '"></td>' +
+            '<td class="row-index-cell" data-label="Nº"><span class="row-index" aria-label="Ponto ' + (index + 1) + '">' + paddedIndex + '</span></td>' +
+            '<td data-label="Série / amostra"><div class="series-edit"><span class="series-swatch" data-series-swatch aria-hidden="true" style="background-color:' + color + '"></span><label class="series-input-wrap"><span class="visually-hidden">Nome da série do ponto ' + (index + 1) + '</span>' +
+            '<input class="series-input" id="series-' + index + '" type="text" data-field="series" maxlength="60" value="' + escapeHTML(point.series) + '" placeholder="Ex.: Amostra A" aria-label="Série do ponto ' + (index + 1) + '"></label></div></td>' +
+            '<td class="numeric-cell" data-label="Volume (mL)"><label class="visually-hidden" for="volume-' + index + '">Volume do ponto ' + (index + 1) + '</label>' +
+            '<input class="numeric-input" id="volume-' + index + '" type="text" inputmode="decimal" autocomplete="off" data-field="volume" value="' + escapeHTML(point.volume) + '" placeholder="0,000" aria-describedby="data-precision-note" aria-label="Volume em mL do ponto ' + (index + 1) + '"></td>' +
+            '<td class="numeric-cell" data-label="pH"><label class="visually-hidden" for="ph-' + index + '">pH do ponto ' + (index + 1) + '</label>' +
+            '<input class="numeric-input" id="ph-' + index + '" type="text" inputmode="decimal" autocomplete="off" data-field="ph" value="' + escapeHTML(point.ph) + '" placeholder="7,000" aria-describedby="data-precision-note" aria-label="pH do ponto ' + (index + 1) + '"></td>' +
             '<td data-label="Ação"><button type="button" class="remove-btn quiet" data-remove="' + index + '" aria-label="Remover ponto ' + (index + 1) + '" title="Remover ponto">×</button></td>' +
             '</tr>';
         }).join("");
@@ -824,6 +884,22 @@ Amostra B;1;6,9</code>
         if (!valid.length && !messages.length) messages.push("Preencha volume e pH para inserir pontos no gráfico.");
         validationEl.textContent = messages.length ? messages.join(". ") + "." : valid.length + (valid.length === 1 ? " ponto válido." : " pontos válidos.") + " Os dados são plotados exatamente como informados.";
         validationEl.classList.toggle("warn", state.invalid > 0);
+        validationEl.dataset.state = state.invalid > 0 ? "warning" : valid.length > 0 ? "ready" : state.incomplete > 0 ? "warning" : "empty";
+        document.getElementById("data-row-count").textContent = String(points.length);
+        document.getElementById("data-valid-count").textContent = String(valid.length);
+        var namesWithData = [];
+        valid.forEach(function (point) { if (namesWithData.indexOf(point.series) < 0) namesWithData.push(point.series); });
+        document.getElementById("data-series-count").textContent = String(namesWithData.length);
+        var reviewCount = state.incomplete + state.invalid;
+        document.getElementById("data-review-count").textContent = String(reviewCount);
+        document.getElementById("data-review-card").dataset.state = reviewCount > 0 ? "alert" : "normal";
+        var activeNames = currentSeriesNames();
+        rowsEl.querySelectorAll("[data-series-swatch]").forEach(function (swatch) {
+          var row = swatch.closest("tr");
+          var index = Number(row && row.getAttribute("data-index"));
+          var name = points[index] ? (String(points[index].series || "").trim() || "Série A") : "Série A";
+          swatch.style.backgroundColor = colorFor(name, activeNames);
+        });
         rowsEl.querySelectorAll("tr").forEach(function (row, index) {
           var point = points[index];
           ["volume", "ph"].forEach(function (field) {
