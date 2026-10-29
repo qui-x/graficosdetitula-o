@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#101d2b">
+  <meta name="application-name" content="Gráficos de investigação">
+  <meta name="apple-mobile-web-app-title" content="Gráficos">
+  <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg">
+  <meta name="description" content="Editor local e independente para inserir leituras manualmente e gerar gráficos de pH por volume e ΔpH/ΔV.">
+  <title>Gráficos de investigação — editor manual</title>
+  
+  <script type="module" src="/src/main.ts"></script>
+</head>
+<body>
+  <svg class="a11y-filters" width="0" height="0" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="f-protanopia"><feColorMatrix type="matrix" values="0.567 0.433 0 0 0 0.558 0.442 0 0 0 0 0.242 0.758 0 0 0 0 0 1 0"/></filter>
+      <filter id="f-deuteranopia"><feColorMatrix type="matrix" values="0.625 0.375 0 0 0 0.7 0.3 0 0 0 0 0.3 0.7 0 0 0 0 0 1 0"/></filter>
+      <filter id="f-tritanopia"><feColorMatrix type="matrix" values="0.95 0.05 0 0 0 0 0.433 0.567 0 0 0 0.475 0.525 0 0 0 0 0 1 0"/></filter>
+      <filter id="f-acromatopsia"><feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0 0.299 0.587 0.114 0 0 0.299 0.587 0.114 0 0 0 0 0 1 0"/></filter>
+    </defs>
+  </svg>
+  <div id="colorblindOverlay" aria-hidden="true"></div>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark flex items-center justify-center rounded-xl" aria-hidden="true">
+          <svg viewBox="0 0 48 48" focusable="false">
+            <path class="logo-drop" d="M24 3.8C20.2 9.9 9.8 20.1 9.8 29.6a14.2 14.2 0 0 0 28.4 0C38.2 20.1 27.8 9.9 24 3.8Z"/>
+            <path class="logo-chart" d="m15.8 31.4 6.1-6.7 4.8 4.1 6.2-8.2" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7"/>
+            <circle class="logo-chart" cx="32.9" cy="20.6" r="1.6"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Gráficos de investigação</h1>
+          <p class="subtitle">Editor manual · funciona offline</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span class="scope">Dados manuais · sem simulação</span>
+        <button type="button" id="pwa-install-button" hidden class="inline-flex items-center gap-2 rounded-xl border border-cyan-800 bg-cyan-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-cyan-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">Instalar app</button>
+        <span id="pwa-status" class="visually-hidden" role="status" aria-live="polite"></span>
+        <details class="a11y-menu" id="a11y-menu">
+          <summary class="a11y-trigger" id="a11y-trigger" aria-controls="a11y-panel" aria-label="Abrir preferências de acessibilidade" title="Acessibilidade">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="8" r="1.4"/><path d="M6.5 10.5 12 12l5.5-1.5M12 12v5m0-5-3 5m3-5 3 5"/></svg>
+            <span>Acessibilidade</span>
+          </summary>
+          <div class="a11y-panel" id="a11y-panel" role="group" aria-labelledby="a11y-heading">
+            <h2 class="a11y-panel-title" id="a11y-heading">Acessibilidade</h2>
+            <p class="a11y-panel-description">Ajustes visuais e de leitura.</p>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Modo escuro</span></span>
+              <span class="switch"><input id="a11y-theme" type="checkbox" role="switch" checked><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Alto contraste</span></span>
+              <span class="switch"><input id="a11y-contrast" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <div class="a11y-row a11y-font-row">
+              <span class="a11y-row-label"><span>Tamanho do texto</span></span>
+              <span class="fontstep">
+                <button type="button" id="a11y-font-minus" class="fontstep-btn" aria-label="Diminuir tamanho do texto">A−</button>
+                <output id="a11y-font-output" aria-live="polite">100%</output>
+                <button type="button" id="a11y-font-plus" class="fontstep-btn" aria-label="Aumentar tamanho do texto">A+</button>
+              </span>
+            </div>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Espaçamento de texto</span></span>
+              <span class="switch"><input id="a11y-spacing" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Leitura simples</span></span>
+              <span class="switch"><input id="a11y-reading" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Reduzir movimento</span></span>
+              <span class="switch"><input id="a11y-motion" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <label class="a11y-row a11y-row-select" for="a11y-colorblind">
+              <span class="a11y-row-label"><span>Visão de cores</span></span>
+              <select id="a11y-colorblind" aria-label="Simulação de visão de cores">
+                <option value="none">Normal</option>
+                <option value="protanopia">Protanopia</option>
+                <option value="deuteranopia">Deuteranopia</option>
+                <option value="tritanopia">Tritanopia</option>
+                <option value="acromatopsia">Escala de cinza</option>
+              </select>
+            </label>
+            <label class="a11y-row">
+              <span class="a11y-row-label"><span>Tradutor de Libras (VLibras)</span></span>
+              <span class="switch"><input id="a11y-libras" type="checkbox" role="switch"><span class="track" aria-hidden="true"><span class="thumb"></span></span></span>
+            </label>
+            <p id="a11y-status" class="a11y-status" role="status" aria-live="polite">Preferências salvas no navegador quando permitido.</p>
+            <button type="button" id="a11y-reset" class="a11y-reset">Restaurar padrão</button>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+
+  <main id="conteudo" tabindex="-1">
+    <div class="layout">
+      <section class="panel" aria-labelledby="dados-heading">
+        <div class="panel-head">
+          <h2 id="dados-heading">Dados</h2>
+          <p class="hint">Edite série, volume e pH; os gráficos atualizam automaticamente.</p>
+        </div>
+        <div class="data-toolbar" aria-label="Ações dos dados">
+          <div class="data-toolbar-primary">
+            <button type="button" class="primary" id="add-point">＋ Adicionar leitura</button>
+            <button type="button" id="import-button">Importar CSV</button>
+          </div>
+          <div class="data-toolbar-secondary">
+            <button type="button" id="export-csv">Exportar CSV</button>
+            <button type="button" id="load-example">Usar exemplo</button>
+            <button type="button" class="quiet danger" id="clear-data">Limpar dados</button>
+          </div>
+          <input class="visually-hidden" type="file" id="import-file" accept=".csv,.txt,.tsv,text/csv,text/plain" tabindex="-1">
+        </div>
+        <div class="data-overview" aria-label="Resumo da tabela de dados">
+          <div class="data-overview-card"><span class="data-overview-label">Linhas</span><strong id="data-row-count" class="data-overview-value">3</strong></div>
+          <div class="data-overview-card"><span class="data-overview-label">Válidos</span><strong id="data-valid-count" class="data-overview-value">0</strong></div>
+          <div class="data-overview-card"><span class="data-overview-label">Séries</span><strong id="data-series-count" class="data-overview-value">0</strong></div>
+          <div class="data-overview-card" id="data-review-card"><span class="data-overview-label">Revisar</span><strong id="data-review-count" class="data-overview-value">0</strong></div>
+        </div>
+        <div class="table-scroll">
+          <table aria-label="Tabela de pontos experimentais">
+            <thead>
+              <tr>
+                <th scope="col" aria-label="Número do ponto">Nº</th>
+                <th scope="col">Série / amostra</th>
+                <th scope="col">Volume <span class="th-unit">adicionado · mL</span></th>
+                <th scope="col">pH</th>
+                <th scope="col"><span class="visually-hidden">Ação</span></th>
+              </tr>
+            </thead>
+            <tbody id="point-rows"></tbody>
+          </table>
+        </div>
+        <fieldset class="series-color-panel">
+          <legend>Cores das séries</legend>
+          <div id="series-colors" class="series-color-list"><p class="hint">As cores aparecerão quando os dados forem preenchidos.</p></div>
+        </fieldset>
+        <p class="data-note" id="data-precision-note">Informe uma série, o volume em mL e o pH medido. Use vírgula ou ponto decimal; a análise aceita milésimos (0,001). Linhas incompletas não são plotadas.</p>
+        <p id="validation" class="validation" data-state="empty" role="status" aria-live="polite">Preencha volume e pH para inserir pontos no gráfico.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="grafico-heading">
+        <div class="panel-head">
+          <h2 id="grafico-heading">Gráficos</h2>
+          <p class="hint">Os gráficos usam apenas as leituras informadas.</p>
+        </div>
+        <div class="chart-controls">
+          <div class="tabs" role="tablist" aria-label="Tipo de gráfico">
+            <button type="button" role="tab" id="tab-curve" data-view="curve" aria-selected="true" aria-controls="chart-host">pH × volume</button>
+            <button type="button" role="tab" id="tab-derivative" data-view="derivative" aria-selected="false" aria-controls="chart-host">ΔpH/ΔV</button>
+          </div>
+          <button type="button" id="download-svg" disabled>Baixar SVG</button>
+          <button type="button" id="export-settings">Exportar ajustes</button>
+          <button type="button" id="import-settings">Importar ajustes</button>
+          <input class="visually-hidden" type="file" id="settings-file" accept=".json,application/json" tabindex="-1">
+          <button type="button" class="quiet" id="print-chart">Imprimir</button>
+        </div>
+        <details class="customization" id="customization">
+          <summary>Personalizar gráficos</summary>
+          <p class="customization-intro">Campos vazios usam escala automática. Intervalo mínimo: 0,001.</p>
+          <div class="custom-grid">
+            <fieldset class="settings-group">
+              <legend>pH × volume</legend>
+              <div class="settings-grid">
+                <label class="setting-field wide">Título do gráfico<input id="cfg-curve-title" type="text" maxlength="100" value="pH medido por volume adicionado"></label>
+                <label class="setting-field wide">Nome do eixo horizontal<input id="cfg-curve-x-label" type="text" maxlength="80" value="Volume adicionado (mL)"></label>
+                <label class="setting-field wide">Nome do eixo vertical<input id="cfg-curve-y-label" type="text" maxlength="80" value="pH medido"></label>
+                <p class="axis-heading">Faixa do eixo X (volume)</p>
+                <label class="setting-field">Início<input id="cfg-curve-x-min" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field">Fim<input id="cfg-curve-x-max" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field wide">Intervalo entre marcações<input id="cfg-curve-x-step" type="text" inputmode="decimal" placeholder="Automático; mínimo 0,001" value=""></label>
+                <p class="axis-heading">Faixa do eixo Y (pH)</p>
+                <label class="setting-field">Mínimo<input id="cfg-curve-y-min" type="text" inputmode="decimal" value="0"></label>
+                <label class="setting-field">Máximo<input id="cfg-curve-y-max" type="text" inputmode="decimal" value="14"></label>
+                <label class="setting-field wide">Intervalo entre marcações<input id="cfg-curve-y-step" type="text" inputmode="decimal" value="2"></label>
+              </div>
+              <div class="style-options">
+                <label><input type="checkbox" id="cfg-curve-grid" checked> Grade</label>
+                <label><input type="checkbox" id="cfg-curve-lines" checked> Conectar pontos</label>
+                <label><input type="checkbox" id="cfg-curve-markers" checked> Mostrar pontos</label>
+              </div>
+            </fieldset>
+            <fieldset class="settings-group">
+              <legend>ΔpH/ΔV</legend>
+              <div class="settings-grid">
+                <label class="setting-field wide">Título do gráfico<input id="cfg-derivative-title" type="text" maxlength="100" value="Variação de pH por volume"></label>
+                <label class="setting-field wide">Nome do eixo horizontal<input id="cfg-derivative-x-label" type="text" maxlength="80" value="Volume final do intervalo (mL)"></label>
+                <label class="setting-field wide">Nome do eixo vertical<input id="cfg-derivative-y-label" type="text" maxlength="80" value="ΔpH/ΔV (pH/mL)"></label>
+                <p class="axis-heading">Faixa do eixo X (volume)</p>
+                <label class="setting-field">Início<input id="cfg-derivative-x-min" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field">Fim<input id="cfg-derivative-x-max" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field wide">Intervalo entre marcações<input id="cfg-derivative-x-step" type="text" inputmode="decimal" placeholder="Automático; mínimo 0,001" value=""></label>
+                <p class="axis-heading">Faixa do eixo Y (ΔpH/ΔV)</p>
+                <label class="setting-field">Mínimo<input id="cfg-derivative-y-min" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field">Máximo<input id="cfg-derivative-y-max" type="text" inputmode="decimal" placeholder="Automático" value=""></label>
+                <label class="setting-field wide">Intervalo entre marcações<input id="cfg-derivative-y-step" type="text" inputmode="decimal" placeholder="Automático; mínimo 0,001" value=""></label>
+                <label class="setting-field wide">Casas decimais dos rótulos
+                  <select id="cfg-decimals">
+                    <option value="3" selected>3 casas (0,001)</option>
+                    <option value="4">4 casas (0,0001)</option>
+                    <option value="5">5 casas (0,00001)</option>
+                    <option value="6">6 casas (0,000001)</option>
+                  </select>
+                </label>
+              </div>
+              <div class="style-options">
+                <label><input type="checkbox" id="cfg-derivative-grid" checked> Grade</label>
+                <label><input type="checkbox" id="cfg-derivative-lines" checked> Conectar pontos</label>
+                <label><input type="checkbox" id="cfg-derivative-markers" checked> Mostrar pontos</label>
+              </div>
+            </fieldset>
+          </div>
+          <p id="settings-status" class="settings-status" role="status" aria-live="polite">Intervalos manuais aceitam incrementos de 0,001. Se houver mais de 120 marcações, a escala será espaçada automaticamente para manter a leitura.</p>
+        </details>
+        <div class="chart-body">
+          <h3 id="chart-title" class="chart-title">pH medido por volume adicionado</h3>
+          <div id="chart-host" class="chart-surface" aria-live="polite">
+            <div class="empty-state"><strong>O gráfico aparecerá aqui</strong><p>Insira pelo menos um ponto com volume e pH válidos. Para calcular ΔpH/ΔV, informe duas leituras com volumes diferentes na mesma sequência.</p></div>
+          </div>
+          <div id="series-legend" class="legend" aria-label="Legenda das séries"></div>
+          <div class="stats" aria-label="Resumo dos dados">
+            <div class="stat"><span class="stat-label">Pontos válidos</span><span id="stat-points" class="stat-value">0</span></div>
+            <div class="stat"><span class="stat-label">Intervalo de pH</span><span id="stat-range" class="stat-value">—</span></div>
+            <div class="stat"><span class="stat-label">Variações calculáveis</span><span id="stat-slopes" class="stat-value">0</span></div>
+          </div>
+          <p id="chart-explanation" class="chart-explanation">O gráfico conecta os pontos informados. A linha não representa uma previsão científica.</p>
+          <details>
+            <summary>Formato para importar dados de uma planilha</summary>
+            <p>CSV separado por ponto e vírgula, com cabeçalho. Série é opcional; volume e pH são obrigatórios.</p>
+            <code class="csv-example">Série;Volume (mL);pH
+Amostra A;0;3,2
+Amostra A;1;3,5
+Amostra A;2;4,1
+Amostra B;0;6,8
+Amostra B;1;6,9</code>
+          </details>
+        </div>
+      </section>
+    </div>
+
+    <aside class="page-note"><strong>Nota:</strong> gráficos baseados nos dados informados; não simulam a titulação nem estimam leituras ausentes.</aside>
+  </main>
+
+  
+
+</body>
+</html>
