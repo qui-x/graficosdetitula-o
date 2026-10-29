@@ -1,3 +1,5 @@
+export {};
+
 interface InstallPromptChoice {
   outcome: "accepted" | "dismissed";
   platform: string;
@@ -9,11 +11,11 @@ interface DeferredInstallPrompt extends Event {
 }
 
 const installButton = document.getElementById("pwa-install-button");
-const status = document.getElementById("pwa-status");
+const statusEl = document.getElementById("pwa-status");
 let deferredPrompt: DeferredInstallPrompt | null = null;
 
 function announce(message: string): void {
-  if (status) status.textContent = message;
+  if (statusEl) statusEl.textContent = message;
 }
 
 window.addEventListener("beforeinstallprompt", (event: Event) => {
