@@ -4,7 +4,7 @@ Ferramenta em HTML único para inserir dados experimentais e analisar gráficos 
 
 ## Como abrir
 
-Abra [index.html](index.html) diretamente em um navegador moderno. O arquivo não precisa de servidor, npm, bibliotecas externas ou conexão com a internet. Também pode ser publicado como site estático pelo GitHub Pages.
+Abra [index.html](index.html) diretamente em um navegador moderno. Não precisa de servidor, npm nem bibliotecas externas. O VLibras é opcional e usa internet. Também pode ser publicado pelo GitHub Pages.
 
 ## Recursos
 
@@ -48,3 +48,8 @@ A interface incorpora os princípios mobile usados no SIAB: controles com alvos 
 
 A atualização foi verificada com teste de DOM simulado para uma largura de 330 px, renderização dos dois gráficos, título personalizado e escala com passos de 0,001. A verificação não substitui um teste visual em aparelhos e navegadores reais.
 
+## Acessibilidade
+
+O painel **Acessibilidade** inclui tema claro/escuro, alto contraste, ajuste de fonte (75–200%), espaçamento, leitura simples, redução de movimento e simulação de daltonismo. As preferências são guardadas no navegador quando permitido. O tradutor VLibras é opcional e precisa de internet; só é carregado quando ativado.
+
+Também há link de salto para o conteúdo e foco visível para uso por teclado.
