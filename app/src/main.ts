@@ -7,6 +7,7 @@ import {
   niceAxisStep as niceStep,
   createAxisTicks as ticks
 } from "./graph-model";
+import { SnapshotHistory } from "./history";
 import "./style.css";
 import "./a11y";
 import "./pwa";
@@ -38,9 +39,7 @@ import "./pwa";
       var draftStatusEl = document.getElementById("draft-status");
       var draftStatusTextEl = document.getElementById("draft-status-text");
       var historyStatusEl = document.getElementById("history-status");
-      var undoStack = [];
-      var redoStack = [];
-      var HISTORY_LIMIT = 100;
+      var history = new SnapshotHistory(100);
       var pendingUndoSnapshot = null;
       var historyTimer = null;
       var committedSnapshot = null;
@@ -427,23 +426,14 @@ import "./pwa";
           settings: collectSettings()
         };
       }
-      function snapshotKey(snapshot) {
-        return JSON.stringify(snapshot);
-      }
       function syncHistoryControls() {
-        if (undoButton) undoButton.disabled = undoStack.length === 0 && !pendingUndoSnapshot;
-        if (redoButton) redoButton.disabled = redoStack.length === 0;
+        if (undoButton) undoButton.disabled = !history.canUndo && !pendingUndoSnapshot;
+        if (redoButton) redoButton.disabled = !history.canRedo;
         if (historyStatusEl) {
-          historyStatusEl.textContent = pendingUndoSnapshot || undoStack.length
+          historyStatusEl.textContent = pendingUndoSnapshot || history.canUndo || history.canRedo
             ? "Há alterações disponíveis no histórico."
             : "Histórico de alterações vazio.";
         }
-      }
-      function pushUndoSnapshot(stack, snapshot) {
-        var last = stack.length ? stack[stack.length - 1] : null;
-        if (last && snapshotKey(last) === snapshotKey(snapshot)) return;
-        stack.push(cloneState(snapshot));
-        if (stack.length > HISTORY_LIMIT) stack.splice(0, stack.length - HISTORY_LIMIT);
       }
       function flushHistoryCheckpoint() {
         if (historyTimer !== null) {
@@ -455,9 +445,8 @@ import "./pwa";
           return;
         }
         var current = captureEditorState();
-        if (snapshotKey(pendingUndoSnapshot) !== snapshotKey(current)) {
-          pushUndoSnapshot(undoStack, pendingUndoSnapshot);
-          redoStack = [];
+        if (JSON.stringify(pendingUndoSnapshot) !== JSON.stringify(current)) {
+          history.record(pendingUndoSnapshot);
         }
         pendingUndoSnapshot = null;
         committedSnapshot = cloneState(current);
@@ -471,8 +460,7 @@ import "./pwa";
       }
       function recordUndoCheckpoint() {
         flushHistoryCheckpoint();
-        pushUndoSnapshot(undoStack, captureEditorState());
-        redoStack = [];
+        history.record(captureEditorState());
         syncHistoryControls();
       }
       function settleHistoryBaseline() {
@@ -505,19 +493,15 @@ import "./pwa";
       }
       function undoChange() {
         flushHistoryCheckpoint();
-        if (!undoStack.length) return;
-        var current = captureEditorState();
-        var previous = undoStack.pop();
-        pushUndoSnapshot(redoStack, current);
+        var previous = history.undo(captureEditorState());
+        if (!previous) return;
         applyEditorState(previous);
         syncHistoryControls();
       }
       function redoChange() {
         flushHistoryCheckpoint();
-        if (!redoStack.length) return;
-        var current = captureEditorState();
-        var next = redoStack.pop();
-        pushUndoSnapshot(undoStack, current);
+        var next = history.redo(captureEditorState());
+        if (!next) return;
         applyEditorState(next);
         syncHistoryControls();
       }
