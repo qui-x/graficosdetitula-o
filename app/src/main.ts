@@ -546,8 +546,12 @@ import "./pwa";
         });
         document.addEventListener("click", function (event) {
           var target = event.target;
+          var elementTarget = target instanceof Element ? target : null;
+          var clickedMenu = elementTarget ? elementTarget.closest(".action-menu") : null;
+          var clickedSummary = elementTarget ? elementTarget.closest("summary") : null;
           document.querySelectorAll(".action-menu[open]").forEach(function (menu) {
-            if (target instanceof Node && !menu.contains(target)) menu.open = false;
+            var clickedAnOption = clickedMenu === menu && !clickedSummary;
+            if (!(target instanceof Node) || !menu.contains(target) || clickedAnOption) menu.open = false;
           });
         });
       }
