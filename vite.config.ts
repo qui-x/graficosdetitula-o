@@ -21,6 +21,7 @@ export default defineConfig({
         name: "Gráficos de investigação",
         short_name: "Gráficos",
         description: "Editor manual para visualizar leituras de pH por volume e calcular ΔpH/ΔV.",
+        lang: "pt-BR",
         start_url: "/graficosdetitula-o/",
         scope: "/graficosdetitula-o/",
         display: "standalone",
