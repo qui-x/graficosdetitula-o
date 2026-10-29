@@ -1,55 +1,62 @@
-# Gráficos de Titulação — editor manual
+# Gráficos de investigação
 
-Ferramenta em HTML único para inserir dados experimentais e analisar gráficos de **pH × volume** e **ΔpH/ΔV**, sem precisar executar uma titulação simulada.
+Editor de leituras experimentais para construir gráficos de **pH × volume** e **ΔpH/ΔV**, sem executar uma titulação simulada. O projeto usa **Vite**, **Tailwind CSS** e **TypeScript**, com publicação estática e suporte a PWA.
 
-## Como abrir
+## Executar localmente
 
-Abra [index.html](index.html) diretamente em um navegador moderno. Não precisa de servidor, npm nem bibliotecas externas. O VLibras é opcional e usa internet. Também pode ser publicado pelo GitHub Pages.
+Requer Node.js 22.12 ou mais recente.
+
+```bash
+npm install
+npm run dev
+```
+
+Para validar os cálculos e preparar a versão publicada:
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run preview
+```
+
+Tailwind CSS, TypeScript e Vite são ferramentas de desenvolvimento: os utilizadores recebem os ficheiros estáticos compilados, sem carregar essas dependências pela internet durante o uso.
 
 ## Recursos
 
 - Edição manual das colunas Série, Volume (mL) e pH.
-- Gráfico pH × volume e gráfico da variação ΔpH/ΔV calculada a partir de leituras consecutivas.
-- Personalização independente dos títulos e dos nomes dos eixos de ambos os gráficos.
-- Limites mínimo/máximo e intervalo de marcação configuráveis para os eixos; intervalo mínimo de 0,001.
-- Rótulos numéricos de 3 a 6 casas decimais.
-- Cores individuais por série e controles para grade, linhas e marcadores.
-- Importação e exportação de CSV, exportação do gráfico em SVG e impressão.
-- Exportação/importação das personalizações em JSON.
-- Ajuste automático da escala quando os limites são deixados vazios.
+- Gráficos pH × volume e ΔpH/ΔV calculado a partir de leituras consecutivas.
+- Personalização independente de títulos, nomes, limites e intervalos de eixo; intervalo mínimo de 0,001.
+- Rótulos numéricos configuráveis de 3 a 6 casas decimais.
+- Cores por série, grade, linhas e marcadores.
+- Importação e exportação CSV; exportação do gráfico em SVG; impressão.
+- Exportação e importação das configurações em JSON.
+- Aparência clara/escura com controles de acessibilidade e interface responsiva.
+- Rascunho automático, incluindo leituras, cores e configurações, armazenado localmente no navegador.
+- PWA instalável, com manifesto, ícones gerados a partir do SVG principal, atualização automática e cache offline dos arquivos compilados.
 
-## Importar dados
+## Modelo dos gráficos
 
-Use a opção **Importar CSV** e selecione `dados-exemplo.csv` ou um arquivo de planilha próprio. Prefira CSV separado por ponto e vírgula, com cabeçalho. O volume e o pH são necessários; a coluna Série é opcional. Os dados decimais podem usar vírgula ou ponto.
+O gráfico pH × volume conecta somente os pontos inseridos. A derivada é calculada por `(pH atual − pH anterior) / (volume atual − volume anterior)` para leituras consecutivas da mesma série. Não são estimados pontos ausentes. Valores incompletos ou fora do domínio são identificados e não são plotados.
 
-## Precisão e interpretação
+## Instalação e uso offline
 
-A ferramenta aceita valores com casas decimais e mostra rótulos com a precisão escolhida. Intervalos manuais de eixo inferiores a 0,001 são rejeitados; se um intervalo gerar mais de 120 marcações, a escala é espaçada automaticamente e a interface informa a alteração.
+No navegador compatível, utilize **Instalar app** quando o botão aparecer; a disponibilidade depende do navegador e das condições de instalação. Depois do primeiro carregamento concluído, o service worker mantém os recursos necessários em cache. Leituras e configurações ficam no armazenamento local desse navegador e não são sincronizadas entre dispositivos.
 
-O gráfico pH × volume conecta somente os pontos inseridos. `ΔpH/ΔV` é calculado como `(pH atual − pH anterior) / (volume atual − volume anterior)` para leituras consecutivas da mesma série. Não são estimados pontos ausentes.
+O VLibras é opcional e precisa de conexão quando ativado.
 
-## Limites desta versão
+## Arquivos principais
 
-Este editor não simula a titulação, não adiciona gotas e não calcula equivalência, pKa ou distribuição de espécies. Ele visualiza os dados fornecidos pelo usuário e não substitui a interpretação experimental nem valida a exatidão das medições.
+- `app/index.html` — HTML de entrada do Vite.
+- `app/src/main.ts` — interações do editor e renderização dos gráficos.
+- `app/src/graph-model.ts` — validação de dados, agrupamento e cálculos tipados.
+- `app/src/style.css` — Tailwind CSS e regras responsivas/temáticas.
+- `app/src/a11y.ts` — controles de acessibilidade.
+- `app/src/pwa.ts` — instalação e estado offline.
+- `app/public/favicon.svg` — símbolo de gota com gráfico usado na identidade visual.
+- `tests/graph-model.test.ts` — testes do núcleo de cálculos.
+- `vite.config.ts` — build do site e configuração PWA para GitHub Pages.
 
-## Arquivos
+## Publicação
 
-- `index.html` — aplicação completa, com CSS e JavaScript incorporados.
-- `dados-exemplo.csv` — conjunto pequeno de dados para testar a importação.
-
-## Responsividade e apresentação
-
-A interface incorpora os princípios mobile usados no SIAB: controles com alvos de toque de pelo menos 44 px, espaçamento compacto, tipografia ajustada para telas pequenas, margem segura no topo para dispositivos móveis, foco visível e respeito à preferência por movimento reduzido.
-
-- Em telas estreitas, a tabela muda para cartões com campos rotulados; isso evita que a página inteira dependa de rolagem horizontal.
-- Os controles de ação se organizam em duas colunas, e o painel de personalização começa recolhido para manter a área de trabalho leve.
-- O gráfico SVG adapta sua dimensão à largura do painel e é redesenhado quando a janela muda de tamanho.
-- Os campos de entrada em dispositivos móveis usam fonte de 16 px para evitar zoom automático em navegadores móveis.
-
-A atualização foi verificada com teste de DOM simulado para uma largura de 330 px, renderização dos dois gráficos, título personalizado e escala com passos de 0,001. A verificação não substitui um teste visual em aparelhos e navegadores reais.
-
-## Acessibilidade
-
-O painel **Acessibilidade** inclui tema claro/escuro, alto contraste, ajuste de fonte (75–200%), espaçamento, leitura simples, redução de movimento e simulação de daltonismo. As preferências são guardadas no navegador quando permitido. O tradutor VLibras é opcional e precisa de internet; só é carregado quando ativado.
-
-Também há link de salto para o conteúdo e foco visível para uso por teclado.
+O workflow `.github/workflows/build-pages.yml` executa a checagem de tipos, os testes e a compilação. Para preservar a publicação atual por branch do GitHub Pages, ele copia o build estático para a raiz da branch e grava o bundle gerado. O HTML de origem permanece em `app/index.html`.
