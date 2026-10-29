@@ -37,6 +37,8 @@ O princípio central é a transparência: **o gráfico representa os dados infor
 | **Importação e exportação** | Trabalhar com CSV, exportar gráficos em SVG e salvar configurações em JSON. |
 | **Impressão** | Preparar a visualização para impressão ou documentação. |
 | **Acessibilidade** | Usar temas claro/escuro, alto contraste, ampliação de texto, espaçamento, leitura simples, redução de movimento e filtros de visão de cores. |
+| **Espaço de trabalho** | Recolher painéis, agrupar ações em menus, lembrar a disposição escolhida e acompanhar o salvamento local. |
+| **Histórico** | Desfazer e refazer alterações e usar atalhos de teclado para ações frequentes. |
 | **Uso como aplicativo** | Instalar como PWA em navegadores compatíveis e reabrir a ferramenta offline depois do primeiro carregamento. |
 
 ## Começar a usar
@@ -49,6 +51,20 @@ O princípio central é a transparência: **o gráfico representa os dados infor
 4. Exporte os dados em CSV, o gráfico em SVG ou os ajustes em JSON, conforme a necessidade.
 
 Valores decimais aceitam vírgula ou ponto. Leituras incompletas e valores fora do domínio são sinalizados e não entram no gráfico. Intervalos manuais dos eixos respeitam a resolução mínima de **0,001**; quando a escala produzir marcações demais, a ferramenta amplia o intervalo para preservar a legibilidade.
+
+## Navegação e atalhos
+
+Os painéis **Dados** e **Gráficos** podem ser recolhidos para liberar espaço. A preferência de abertura das áreas é lembrada localmente neste navegador. Os menus de ações se fecham ao clicar fora deles ou pressionar `Esc`.
+
+| Atalho | Ação |
+| --- | --- |
+| `Ctrl/Cmd + Z` | Desfazer a última alteração, fora de campos de texto. |
+| `Ctrl/Cmd + Shift + Z` ou `Ctrl + Y` | Refazer uma alteração. |
+| `Ctrl/Cmd + Enter` | Adicionar uma leitura. |
+| `Ctrl/Cmd + Shift + E` | Exportar os dados em CSV. |
+| `Esc` | Fechar menus abertos. |
+
+O indicador junto aos controles de histórico informa quando o rascunho local foi salvo. O histórico de desfazer/refazer vale para a sessão atual; os dados e as configurações continuam salvos no navegador.
 
 ## Instalar e usar offline
 
