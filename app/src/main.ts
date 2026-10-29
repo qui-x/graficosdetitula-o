@@ -474,6 +474,13 @@ import "./pwa";
         }
       }
       function addPoint() {
+        var series = points.length ? String(points[points.length - 1].series || "").trim() : "";
+        points.push({ series: series || "Série A", volume: "", ph: "" });
+        renderRows();
+        renderAll();
+        var target = document.getElementById("volume-" + (points.length - 1));
+        if (target) target.focus();
+      }
       function download(name, type, text) {
         var blob = new Blob([text], { type: type });
         var url = URL.createObjectURL(blob);
