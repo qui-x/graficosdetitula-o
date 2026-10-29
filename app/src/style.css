@@ -399,7 +399,8 @@
     button[hidden] { display: none !important; }
     .brand-mark svg { display: block; width: 34px; height: 34px; flex: none; }
     .brand-mark .logo-drop { fill: var(--logo-drop, #72d8ef); }
-    .brand-mark .logo-chart { stroke: var(--logo-chart, #0b1420); fill: var(--logo-chart, #0b1420); }
+    .brand-mark .logo-chart { stroke: var(--logo-chart, #0b1420); }
+    .brand-mark circle.logo-chart { fill: var(--logo-chart, #0b1420); stroke: none; }
     :root { --logo-drop: #72d8ef; --logo-chart: #0b1420; }
     :root[data-theme="light"] { --logo-drop: #006e89; --logo-chart: #ffffff; }
     :root[data-theme="light"] .scope {
