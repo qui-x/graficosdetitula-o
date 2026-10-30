@@ -549,9 +549,10 @@ import "./pwa";
         svg += '<text class="axis-label" x="' + (M.left + plotW / 2) + '" y="' + (H - 18) + '" text-anchor="middle">' + escapeHTML(config.xLabel) + '</text>';
         svg += '<text class="axis-label" x="22" y="' + (M.top + plotH / 2) + '" transform="rotate(-90 22 ' + (M.top + plotH / 2) + ')" text-anchor="middle">' + escapeHTML(config.yLabel) + '</text>';
         var names = seriesNames(segments);
+        var colorNames = currentSeriesNames();
         svg += '<g clip-path="url(#plot-clip)">';
         segments.forEach(function (segment) {
-          var color = colorFor(segment.series, names);
+          var color = colorFor(segment.series, colorNames);
           if (config.lines && segment.points.length > 1) {
             var coords = segment.points.map(function (point) { return x(point.volume).toFixed(3) + "," + y(point.ph).toFixed(3); }).join(" ");
             svg += '<polyline points="' + coords + '" fill="none" stroke="' + color + '" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -604,9 +605,10 @@ import "./pwa";
         }
         var names = [];
         slopes.forEach(function (point) { if (names.indexOf(point.series) < 0) names.push(point.series); });
+        var colorNames = currentSeriesNames();
         names.forEach(function (name) {
           var seriesPoints = slopes.filter(function (point) { return point.series === name; });
-          var color = colorFor(name, names);
+          var color = colorFor(name, colorNames);
           if (config.lines && seriesPoints.length > 1) {
             svg += '<polyline points="' + seriesPoints.map(function (point) { return x(point.volume).toFixed(3) + "," + y(point.slope).toFixed(3); }).join(" ") + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
           }
