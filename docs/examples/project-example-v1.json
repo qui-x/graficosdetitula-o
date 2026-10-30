@@ -1,0 +1,132 @@
+{
+  "format": "graficos-titulacao-project",
+  "schemaVersion": 1,
+  "projectId": "8cde0ed1-6b1b-4bca-8c79-6abfd7385010",
+  "name": "Demonstração de titulação",
+  "createdAt": "2026-10-29T20:00:00.000Z",
+  "updatedAt": "2026-10-29T20:30:00.000Z",
+  "data": {
+    "measurements": [
+      {
+        "id": "8cde0ed1-6b1b-4bca-8c79-6abfd7385001",
+        "seriesName": "Amostra A",
+        "volumeInput": "0,00",
+        "phInput": "2,10"
+      },
+      {
+        "id": "8cde0ed1-6b1b-4bca-8c79-6abfd7385002",
+        "seriesName": "Amostra A",
+        "volumeInput": "1,00",
+        "phInput": "3,40"
+      }
+    ]
+  },
+  "scientificSettings": {
+    "validPhRange": {
+      "min": 0,
+      "max": 14
+    },
+    "curveRepresentation": "segmentos",
+    "comparisonMode": "sobreposicao",
+    "instrumentUncertainty": {
+      "volume": {
+        "interpretation": "maximum-tolerance",
+        "value": 0.03,
+        "source": "manufacturer-specification",
+        "note": "Exemplo demonstrativo."
+      },
+      "ph": {
+        "interpretation": "standard-uncertainty",
+        "value": 0.02,
+        "source": "calibration",
+        "note": "Exemplo demonstrativo; não combinado com a tolerância de volume."
+      },
+      "standardPropagationAssumption": "not-configured"
+    },
+    "repeatedVolumeDecisions": []
+  },
+  "visualSettings": {
+    "showGrid": true,
+    "showUncertaintyBars": true,
+    "showGuideLines": true,
+    "displayDecimals": 3,
+    "seriesColors": {
+      "Amostra A": "#1689bd"
+    },
+    "hiddenSeries": [],
+    "chartTitle": "Curva de titulação",
+    "xAxisLabel": "Volume adicionado (mL)",
+    "yAxisLabel": "pH"
+  },
+  "preferences": {
+    "lastStage": "grafico",
+    "advancedPanelOpen": false,
+    "seriesPanelOpen": true,
+    "accessibility": {
+      "theme": "system",
+      "highContrast": false,
+      "fontScale": 1,
+      "extraTextSpacing": false,
+      "reducedMotion": false,
+      "colorVisionSimulation": "none",
+      "vlibrasEnabled": false
+    }
+  },
+  "revisions": {
+    "data": 2,
+    "scientific": 1
+  },
+  "latestGeneration": {
+    "id": "8cde0ed1-6b1b-4bca-8c79-6abfd7385020",
+    "engineVersion": "0.7.0",
+    "algorithmVersions": {
+      "catmullRom": "centripetal-alpha-0.5-local-range-guard-v1",
+      "axisTicks": "nice-1-2-5-v1",
+      "uncertainty": "interval-bounds-or-independent-first-order-v1"
+    },
+    "generatedAt": "2026-10-29T20:15:00.000Z",
+    "sourceDataRevision": 2,
+    "sourceScientificRevision": 1,
+    "measurements": [
+      {
+        "id": "8cde0ed1-6b1b-4bca-8c79-6abfd7385001",
+        "seriesName": "Amostra A",
+        "volumeMl": 0,
+        "ph": 2.1,
+        "originalOrder": 0
+      },
+      {
+        "id": "8cde0ed1-6b1b-4bca-8c79-6abfd7385002",
+        "seriesName": "Amostra A",
+        "volumeMl": 1,
+        "ph": 3.4,
+        "originalOrder": 1
+      }
+    ],
+    "scientificSettings": {
+      "validPhRange": {
+        "min": 0,
+        "max": 14
+      },
+      "curveRepresentation": "segmentos",
+      "comparisonMode": "sobreposicao",
+      "instrumentUncertainty": {
+        "volume": {
+          "interpretation": "maximum-tolerance",
+          "value": 0.03,
+          "source": "manufacturer-specification",
+          "note": "Exemplo demonstrativo."
+        },
+        "ph": {
+          "interpretation": "standard-uncertainty",
+          "value": 0.02,
+          "source": "calibration",
+          "note": "Exemplo demonstrativo; não combinado com a tolerância de volume."
+        },
+        "standardPropagationAssumption": "not-configured"
+      },
+      "repeatedVolumeDecisions": []
+    },
+    "warnings": []
+  }
+}
