@@ -128,7 +128,6 @@
         </div>
         <div class="data-toolbar" aria-label="Ações dos dados">
           <div class="data-toolbar-primary">
-            <button type="button" class="primary" id="add-point">＋ Adicionar leitura</button>
             <button type="button" id="import-button">Importar CSV</button>
           </div>
           <details class="action-menu data-actions-menu" id="data-actions-menu">
@@ -151,8 +150,34 @@
             <span id="history-status" class="visually-hidden" aria-live="polite">Histórico de alterações vazio.</span>
           </div>
         </div>
+        <form class="measurement-entry" id="measurement-entry-form" novalidate aria-labelledby="entry-heading">
+          <div class="measurement-entry-heading">
+            <div>
+              <h3 id="entry-heading">Adicionar leitura</h3>
+              <p>Informe a série, o volume adicionado e o pH medido.</p>
+            </div>
+            <span class="measurement-entry-note">Uma medição por vez</span>
+          </div>
+          <div class="measurement-entry-fields">
+            <label class="measurement-field">
+              <span>Série / amostra</span>
+              <input id="entry-series" type="text" maxlength="60" value="Série A" autocomplete="off" placeholder="Ex.: Amostra A" aria-describedby="entry-series-hint">
+              <small id="entry-series-hint">Mantenha o mesmo nome para agrupar leituras da mesma série.</small>
+            </label>
+            <label class="measurement-field">
+              <span>Volume adicionado · mL</span>
+              <input id="entry-volume" type="text" inputmode="decimal" autocomplete="off" placeholder="Ex.: 2,500" aria-describedby="data-precision-note" required>
+            </label>
+            <label class="measurement-field">
+              <span>pH medido</span>
+              <input id="entry-ph" type="text" inputmode="decimal" autocomplete="off" placeholder="Ex.: 7,250" aria-describedby="data-precision-note" required>
+            </label>
+            <button type="submit" class="primary" id="add-point">Adicionar à tabela</button>
+          </div>
+          <p class="measurement-entry-status" id="entry-status" role="status" aria-live="polite"></p>
+        </form>
         <div class="data-overview" aria-label="Resumo da tabela de dados">
-          <div class="data-overview-card"><span class="data-overview-label">Linhas</span><strong id="data-row-count" class="data-overview-value">3</strong></div>
+          <div class="data-overview-card"><span class="data-overview-label">Registros</span><strong id="data-row-count" class="data-overview-value">3</strong></div>
           <div class="data-overview-card"><span class="data-overview-label">Válidos</span><strong id="data-valid-count" class="data-overview-value">0</strong></div>
           <div class="data-overview-card"><span class="data-overview-label">Séries</span><strong id="data-series-count" class="data-overview-value">0</strong></div>
           <div class="data-overview-card" id="data-review-card"><span class="data-overview-label">Revisar</span><strong id="data-review-count" class="data-overview-value">0</strong></div>
@@ -170,6 +195,10 @@
             </thead>
             <tbody id="point-rows"></tbody>
           </table>
+          <div id="table-empty-state" class="table-empty-state" role="status">
+            <strong>A tabela ainda está vazia.</strong>
+            <span>Adicione uma leitura no formulário acima ou importe uma planilha CSV.</span>
+          </div>
         </div>
         <details class="section-disclosure" id="series-colors-details" data-persist-open>
           <summary>Cores das séries <span class="menu-caret" aria-hidden="true"></span></summary>
