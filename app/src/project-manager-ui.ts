@@ -214,8 +214,27 @@ export class ProjectManagerUI {
 
       const actions = document.createElement("div");
       actions.className = "project-card-actions";
+
+      const openButton = document.createElement("button");
+      openButton.type = "button";
+      openButton.dataset.projectAction = "open";
+      openButton.dataset.projectId = project.projectId;
+      openButton.className = "project-card-open";
+      openButton.textContent = "Abrir";
+      openButton.setAttribute("aria-label", "Abrir projeto " + project.name);
+      actions.appendChild(openButton);
+
+      const moreActions = document.createElement("details");
+      moreActions.className = "compact-action-menu project-card-more";
+      const moreSummary = document.createElement("summary");
+      moreSummary.className = "compact-action-menu-trigger";
+      moreSummary.textContent = "Mais";
+      moreSummary.setAttribute("aria-label", "Mais ações do projeto " + project.name);
+      moreSummary.title = "Duplicar, exportar, renomear ou excluir projeto";
+
+      const menu = document.createElement("div");
+      menu.className = "compact-action-menu-items";
       [
-        ["open", "Abrir"],
         ["duplicate", "Duplicar"],
         ["export", "Exportar JSON"],
         ["rename", "Renomear"],
@@ -227,8 +246,11 @@ export class ProjectManagerUI {
         button.dataset.projectId = project.projectId;
         button.textContent = label;
         button.setAttribute("aria-label", label + " projeto " + project.name);
-        actions.appendChild(button);
+        if (action === "delete") button.className = "is-destructive";
+        menu.appendChild(button);
       });
+      moreActions.append(moreSummary, menu);
+      actions.appendChild(moreActions);
       card.append(main, actions);
       this.elements.list.appendChild(card);
     });
