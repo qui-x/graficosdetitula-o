@@ -390,33 +390,44 @@ Amostra B;1;6,9</code>
           <button type="button" id="project-manager-close" class="project-manager-close" aria-label="Fechar gerenciador de projetos" disabled>×</button>
         </header>
 
-        <form class="project-create-form" id="project-create-form" novalidate>
-          <label for="new-project-name">
-            <span>Novo projeto</span>
-            <input id="new-project-name" type="text" maxlength="120" autocomplete="off" placeholder="Ex.: Titulação de amostra A" required>
-          </label>
-          <button type="submit" class="primary" id="create-project-button">＋ Criar projeto</button>
-        </form>
+        <section class="project-manager-actions" aria-label="Criar ou importar projeto">
+          <form class="project-create-form" id="project-create-form" novalidate>
+            <label for="new-project-name">
+              <span>Novo projeto</span>
+              <input id="new-project-name" type="text" maxlength="120" autocomplete="off" placeholder="Ex.: Titulação de amostra A" required>
+            </label>
+            <button type="submit" class="primary" id="create-project-button">＋ Criar projeto</button>
+          </form>
 
-        <div class="project-manager-toolbar">
-          <div class="project-manager-list-heading">
-            <strong>Projetos neste dispositivo</strong>
-            <span id="project-count">0 projetos</span>
-          </div>
           <div class="project-manager-import">
+            <div class="project-manager-import-copy">
+              <strong>Importar investigação</strong>
+              <span>Recupere um projeto salvo em arquivo JSON.</span>
+            </div>
             <button type="button" id="import-project-button">Importar projeto JSON</button>
             <input class="visually-hidden" type="file" id="project-import-file" accept=".json,application/json" tabindex="-1">
           </div>
-        </div>
-        <p class="project-manager-feedback" id="project-manager-feedback" role="status" aria-live="polite"></p>
-        <p class="project-storage-note" id="project-storage-note" role="status" aria-live="polite">Os projetos são guardados localmente neste navegador.</p>
+        </section>
 
-        <div id="project-list" class="project-list" aria-label="Lista de projetos"></div>
-        <div id="project-empty-state" class="project-empty-state" hidden>
-          <span class="project-empty-icon" aria-hidden="true">＋</span>
-          <strong>Nenhum projeto cadastrado.</strong>
-          <p>Crie sua primeira investigação ou importe um arquivo JSON de projeto.</p>
-        </div>
+        <section class="project-library" aria-labelledby="project-library-title">
+          <div class="project-manager-toolbar">
+            <div class="project-manager-list-heading">
+              <strong id="project-library-title">Investigações salvas</strong>
+              <span id="project-count">0 projetos</span>
+            </div>
+            <span class="project-library-scope">Biblioteca deste dispositivo</span>
+          </div>
+
+          <p class="project-manager-feedback" id="project-manager-feedback" role="status" aria-live="polite"></p>
+          <p class="project-storage-note" id="project-storage-note" role="status" aria-live="polite">Os projetos são guardados localmente neste navegador.</p>
+
+          <div id="project-list" class="project-list" aria-label="Lista de projetos"></div>
+          <div id="project-empty-state" class="project-empty-state" hidden>
+            <span class="project-empty-icon" aria-hidden="true">＋</span>
+            <strong>Nenhum projeto cadastrado.</strong>
+            <p>Crie sua primeira investigação ou importe um arquivo JSON de projeto.</p>
+          </div>
+        </section>
       </div>
     </dialog>
 
