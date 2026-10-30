@@ -333,7 +333,7 @@ import "./pwa";
           var visibilityLabel = visible ? "Ocultar no gráfico" : "Mostrar no gráfico";
           return '<article class="series-manager-item">' +
             '<div class="series-manager-fields">' +
-              '<label class="series-manager-name-field"><span>Nome exato</span><input type="text" maxlength="60" data-series-rename-index="' + index + '" value="' + escapeHTML(name) + '" aria-label="Nome exato da série ' + (index + 1) + '"></label>' +
+              '<label class="series-manager-name-field"><span>Nome exato</span><input type="text" maxlength="60" data-series-rename-index="' + index + '" value="' + escapeHTML(name) + '" aria-label="Nome exato da série ' + (index + 1) + '"><small class="series-manager-name-preview">Identificador literal: <code>' + escapeHTML(JSON.stringify(name)) + '</code></small></label>' +
               '<label class="series-manager-color-field"><span>Cor</span><input type="color" id="series-color-' + index + '" data-series-color-index="' + index + '" value="' + color + '" aria-label="Cor da série ' + escapeHTML(name) + '"></label>' +
               '<span class="series-manager-count">' + count + (count === 1 ? " leitura" : " leituras") + '</span>' +
             '</div>' +
