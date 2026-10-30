@@ -17,11 +17,14 @@ import "./pwa";
     (function () {
       var COLORS = ["#087eaa", "#c44555", "#26836d", "#7856b5", "#d17a17", "#3972c6", "#a43b87", "#617d32"];
       var points = [];
+      var seriesCatalog = ["Série A"];
+      var hiddenSeries = {};
       var currentView = "curve";
       var rowsEl = document.getElementById("point-rows");
       var tableEmptyStateEl = document.getElementById("table-empty-state");
       var entryForm = document.getElementById("measurement-entry-form");
       var entrySeriesInput = document.getElementById("entry-series");
+      var entrySeriesOptionsEl = document.getElementById("series-options");
       var entryVolumeInput = document.getElementById("entry-volume");
       var entryPhInput = document.getElementById("entry-ph");
       var entryStatusEl = document.getElementById("entry-status");
@@ -32,6 +35,9 @@ import "./pwa";
       var chartTitle = document.getElementById("chart-title");
       var chartExplanation = document.getElementById("chart-explanation");
       var seriesColorsEl = document.getElementById("series-colors");
+      var seriesCreateForm = document.getElementById("series-create-form");
+      var newSeriesNameInput = document.getElementById("new-series-name");
+      var seriesManagerFeedbackEl = document.getElementById("series-manager-feedback");
       var settingsStatusEl = document.getElementById("settings-status");
       var settingsWarnings = [];
       var seriesColors = {};
@@ -148,10 +154,10 @@ import "./pwa";
       function renderRows() {
         var names = currentSeriesNames();
         rowsEl.innerHTML = points.map(function (point, index) {
-          var seriesName = String(point.series || "").trim() || "Série A";
+          var seriesName = effectiveSeriesName(point.series);
           var color = colorFor(seriesName, names);
           var paddedIndex = String(index + 1).padStart(2, "0");
-          return '<tr data-index="' + index + '">' +
+          return '<tr data-index="' + index + '" data-measurement-id="' + escapeHTML(point.id || "") + '">' +
             '<td class="row-index-cell" data-label="Nº"><span class="row-index" aria-label="Ponto ' + (index + 1) + '">' + paddedIndex + '</span></td>' +
             '<td data-label="Série / amostra"><div class="series-edit"><span class="series-swatch" data-series-swatch aria-hidden="true" style="background-color:' + color + '"></span><label class="series-input-wrap"><span class="visually-hidden">Nome da série do ponto ' + (index + 1) + '</span>' +
             '<input class="series-input" id="series-' + index + '" type="text" data-field="series" maxlength="60" value="' + escapeHTML(point.series) + '" placeholder="Ex.: Amostra A" aria-label="Série do ponto ' + (index + 1) + '"></label></div></td>' +
@@ -259,27 +265,233 @@ import "./pwa";
         var index = names.indexOf(seriesName);
         return COLORS[(index < 0 ? 0 : index) % COLORS.length];
       }
+      function effectiveSeriesName(value) {
+        var name = String(value == null ? "" : value);
+        return name === "" ? "Série A" : name;
+      }
+      function createMeasurementId() {
+        try {
+          if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+        } catch (error) {
+          // Usa o identificador local alternativo em navegadores sem randomUUID.
+        }
+        return "m-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
+      }
+      function ensureMeasurementIds(rows) {
+        var seen = Object.create(null);
+        rows.forEach(function (point) {
+          var id = String(point.id || "");
+          if (!id || seen[id]) id = createMeasurementId();
+          point.id = id;
+          seen[id] = true;
+        });
+      }
+      function registerSeriesName(name) {
+        var exactName = effectiveSeriesName(name);
+        if (seriesCatalog.indexOf(exactName) === -1) seriesCatalog.push(exactName);
+        return exactName;
+      }
+      function ensureSeriesCatalogue() {
+        var uniqueNames = [];
+        seriesCatalog.forEach(function (name) {
+          if (typeof name === "string" && name !== "" && uniqueNames.indexOf(name) === -1) uniqueNames.push(name);
+        });
+        seriesCatalog = uniqueNames;
+        points.forEach(function (point) { registerSeriesName(point.series); });
+        if (!seriesCatalog.length) seriesCatalog.push("Série A");
+      }
+      function isSeriesVisible(name) {
+        return hiddenSeries[name] !== true;
+      }
       function currentSeriesNames() {
-        var names = [];
+        var names = seriesCatalog.slice();
         points.forEach(function (point) {
-          var name = String(point.series || "").trim() || "Série A";
-          if (names.indexOf(name) < 0) names.push(name);
+          var name = effectiveSeriesName(point.series);
+          if (names.indexOf(name) === -1) names.push(name);
         });
         return names;
       }
+      function syncEntrySeriesOptions() {
+        var names = currentSeriesNames();
+        if (!entrySeriesOptionsEl) return;
+        entrySeriesOptionsEl.innerHTML = names.map(function (name) {
+          return '<option value="' + escapeHTML(name) + '"></option>';
+        }).join("");
+      }
       function syncSeriesColorControls() {
         var names = currentSeriesNames();
-        var signature = JSON.stringify(names);
+        var summary = names.map(function (name) {
+          var count = points.filter(function (point) { return effectiveSeriesName(point.series) === name; }).length;
+          return [name, count, isSeriesVisible(name)];
+        });
+        var signature = JSON.stringify(summary);
         if (signature === colorNamesSignature) return;
         colorNamesSignature = signature;
         if (!names.length) {
-          seriesColorsEl.innerHTML = '<p class="hint">As cores aparecerão quando os dados forem preenchidos.</p>';
+          seriesColorsEl.innerHTML = '<p class="hint">Crie uma série para começar a organizar as leituras.</p>';
           return;
         }
         seriesColorsEl.innerHTML = names.map(function (name, index) {
           var color = colorFor(name, names);
-          return '<div class="series-color-item"><label for="series-color-' + index + '">' + escapeHTML(name) + '</label><input type="color" id="series-color-' + index + '" data-series-color="' + escapeHTML(name) + '" value="' + color + '" aria-label="Cor da série ' + escapeHTML(name) + '"></div>';
+          var count = summary[index][1];
+          var visible = isSeriesVisible(name);
+          var visibilityLabel = visible ? "Ocultar no gráfico" : "Mostrar no gráfico";
+          return '<article class="series-manager-item">' +
+            '<div class="series-manager-fields">' +
+              '<label class="series-manager-name-field"><span>Nome exato</span><input type="text" maxlength="60" data-series-rename-index="' + index + '" value="' + escapeHTML(name) + '" aria-label="Nome exato da série ' + (index + 1) + '"><small class="series-manager-name-preview">Identificador literal: <code>' + escapeHTML(JSON.stringify(name)) + '</code></small></label>' +
+              '<label class="series-manager-color-field"><span>Cor</span><input type="color" id="series-color-' + index + '" data-series-color-index="' + index + '" value="' + color + '" aria-label="Cor da série ' + escapeHTML(name) + '"></label>' +
+              '<span class="series-manager-count">' + count + (count === 1 ? " leitura" : " leituras") + '</span>' +
+            '</div>' +
+            '<div class="series-manager-actions">' +
+              '<button type="button" data-series-action="rename" data-series-index="' + index + '">Salvar nome</button>' +
+              '<button type="button" data-series-action="duplicate" data-series-index="' + index + '">Duplicar leituras</button>' +
+              '<button type="button" data-series-action="visibility" data-series-index="' + index + '" aria-pressed="' + (visible ? "true" : "false") + '">' + visibilityLabel + '</button>' +
+            '</div>' +
+          '</article>';
         }).join("");
+      }
+      function setSeriesManagerFeedback(message, state) {
+        seriesManagerFeedbackEl.textContent = message || "";
+        if (state) seriesManagerFeedbackEl.dataset.state = state;
+        else seriesManagerFeedbackEl.removeAttribute("data-state");
+      }
+      function refreshSeriesManager(focusTarget) {
+        colorNamesSignature = "";
+        syncEntrySeriesOptions();
+        renderRows();
+        renderAll();
+        settleHistoryBaseline();
+        if (focusTarget && typeof focusTarget.focus === "function") focusTarget.focus();
+      }
+      function createSeriesFromForm(event) {
+        event.preventDefault();
+        var name = String(newSeriesNameInput.value == null ? "" : newSeriesNameInput.value);
+        if (name === "") {
+          setSeriesManagerFeedback("Digite um nome para criar a série.", "error");
+          newSeriesNameInput.focus();
+          return;
+        }
+        if (name.length > 60) {
+          setSeriesManagerFeedback("O nome da série pode ter até 60 caracteres.", "error");
+          newSeriesNameInput.focus();
+          return;
+        }
+        if (currentSeriesNames().indexOf(name) !== -1) {
+          setSeriesManagerFeedback("Já existe uma série com esse nome exato. Maiúsculas e espaços diferentes são aceitos como nomes distintos.", "error");
+          newSeriesNameInput.focus();
+          return;
+        }
+        recordUndoCheckpoint();
+        seriesCatalog.push(name);
+        delete hiddenSeries[name];
+        newSeriesNameInput.value = "";
+        entrySeriesInput.value = name;
+        refreshSeriesManager();
+        setSeriesManagerFeedback("Série criada. Ela está pronta para receber leituras.", "success");
+      }
+      function renameSeriesAt(index) {
+        var names = currentSeriesNames();
+        var oldName = names[index];
+        if (oldName == null) return;
+        var input = seriesColorsEl.querySelector('input[data-series-rename-index="' + index + '"]');
+        if (!input) return;
+        var newName = String(input.value == null ? "" : input.value);
+        if (newName === "") {
+          setSeriesManagerFeedback("O nome da série não pode ficar vazio.", "error");
+          input.focus();
+          return;
+        }
+        if (newName.length > 60) {
+          setSeriesManagerFeedback("O nome da série pode ter até 60 caracteres.", "error");
+          input.focus();
+          return;
+        }
+        if (newName !== oldName && names.indexOf(newName) !== -1) {
+          setSeriesManagerFeedback("Já existe uma série com esse nome exato. Escolha outro nome.", "error");
+          input.focus();
+          return;
+        }
+        if (newName === oldName) {
+          setSeriesManagerFeedback("O nome da série não foi alterado.", "info");
+          return;
+        }
+        recordUndoCheckpoint();
+        points.forEach(function (point) {
+          if (effectiveSeriesName(point.series) === oldName) point.series = newName;
+        });
+        var catalogIndex = seriesCatalog.indexOf(oldName);
+        if (catalogIndex >= 0) seriesCatalog[catalogIndex] = newName;
+        else seriesCatalog.push(newName);
+        if (Object.prototype.hasOwnProperty.call(seriesColors, oldName)) {
+          var existingColor = seriesColors[oldName];
+          delete seriesColors[oldName];
+          if (!Object.prototype.hasOwnProperty.call(seriesColors, newName)) seriesColors[newName] = existingColor;
+        }
+        if (Object.prototype.hasOwnProperty.call(hiddenSeries, oldName)) {
+          var wasHidden = hiddenSeries[oldName];
+          delete hiddenSeries[oldName];
+          if (wasHidden === true) hiddenSeries[newName] = true;
+        }
+        if (entrySeriesInput.value === oldName) entrySeriesInput.value = newName;
+        refreshSeriesManager();
+        setSeriesManagerFeedback("Série renomeada. Todas as leituras associadas foram atualizadas.", "success");
+      }
+      function duplicateSeriesAt(index) {
+        var names = currentSeriesNames();
+        var sourceName = names[index];
+        if (sourceName == null) return;
+        var copyName = sourceName + " (cópia)";
+        var suffix = 2;
+        while (names.indexOf(copyName) !== -1) {
+          copyName = sourceName + " (cópia " + suffix + ")";
+          suffix += 1;
+        }
+        recordUndoCheckpoint();
+        var sourcePoints = points.filter(function (point) {
+          return effectiveSeriesName(point.series) === sourceName;
+        });
+        var copiedPoints = sourcePoints.map(function (point) {
+          return {
+            id: createMeasurementId(),
+            series: copyName,
+            volume: String(point.volume == null ? "" : point.volume),
+            ph: String(point.ph == null ? "" : point.ph)
+          };
+        });
+        seriesCatalog.push(copyName);
+        hiddenSeries[copyName] = false;
+        points = points.concat(copiedPoints);
+        entrySeriesInput.value = copyName;
+        refreshSeriesManager();
+        setSeriesManagerFeedback(
+          sourcePoints.length
+            ? "Série duplicada com " + sourcePoints.length + (sourcePoints.length === 1 ? " leitura copiada." : " leituras copiadas.")
+            : "Série vazia duplicada. Ela está pronta para receber leituras.",
+          "success"
+        );
+      }
+      function toggleSeriesVisibilityAt(index) {
+        var names = currentSeriesNames();
+        var name = names[index];
+        if (name == null) return;
+        recordUndoCheckpoint();
+        if (isSeriesVisible(name)) hiddenSeries[name] = true;
+        else delete hiddenSeries[name];
+        refreshSeriesManager();
+        setSeriesManagerFeedback(
+          isSeriesVisible(name) ? "Série visível no gráfico." : "Série oculta no gráfico. As leituras continuam preservadas.",
+          "success"
+        );
+      }
+      function handleSeriesManagerAction(event) {
+        var button = event.target.closest("button[data-series-action]");
+        if (!button) return;
+        var index = Number(button.getAttribute("data-series-index"));
+        if (!Number.isInteger(index) || index < 0) return;
+        var action = button.getAttribute("data-series-action");
+        if (action === "rename") renameSeriesAt(index);
+        else if (action === "duplicate") duplicateSeriesAt(index);
+        else if (action === "visibility") toggleSeriesVisibilityAt(index);
       }
       function seriesNames(segments) {
         var names = [];
@@ -288,9 +500,10 @@ import "./pwa";
         });
         return names;
       }
-      function buildLegend(names) {
+      function buildLegend(names, colorNames) {
+        var paletteNames = colorNames || names;
         legendEl.innerHTML = names.map(function (name) {
-          return '<span class="legend-item"><span class="legend-swatch" style="background:' + colorFor(name, names) + '"></span><span>' + escapeHTML(name) + '</span></span>';
+          return '<span class="legend-item"><span class="legend-swatch" style="background:' + colorFor(name, paletteNames) + '"></span><span>' + escapeHTML(name) + '</span></span>';
         }).join("");
       }
       function svgStart(label) {
@@ -309,11 +522,16 @@ import "./pwa";
         downloadSvgButton.disabled = true;
         legendEl.innerHTML = "";
       }
-      function renderCurve(segments, validPoints) {
+      function renderCurve(segments, validPoints, allValidHidden) {
         var derived = validPoints.map(function (point) { return { series: point.series, volume: point.volume, ph: point.ph }; });
         var config = getGraphConfig("curve", derived);
         if (!validPoints.length) {
-          emptyMessage("O gráfico aparecerá aqui", "Preencha volume e pH em pelo menos uma linha para mostrar os pontos informados.");
+          emptyMessage(
+            allValidHidden ? "Todas as séries estão ocultas" : "O gráfico aparecerá aqui",
+            allValidHidden
+              ? "As leituras continuam salvas. Reative uma ou mais séries no painel Gerenciar séries para voltar a exibi-las."
+              : "Preencha volume e pH em pelo menos uma linha para mostrar os pontos informados."
+          );
           chartTitle.textContent = config.title;
           chartExplanation.textContent = "O gráfico conecta apenas os pontos digitados. Não há curva prevista nem valores calculados automaticamente.";
           return;
@@ -337,9 +555,10 @@ import "./pwa";
         svg += '<text class="axis-label" x="' + (M.left + plotW / 2) + '" y="' + (H - 18) + '" text-anchor="middle">' + escapeHTML(config.xLabel) + '</text>';
         svg += '<text class="axis-label" x="22" y="' + (M.top + plotH / 2) + '" transform="rotate(-90 22 ' + (M.top + plotH / 2) + ')" text-anchor="middle">' + escapeHTML(config.yLabel) + '</text>';
         var names = seriesNames(segments);
+        var colorNames = currentSeriesNames();
         svg += '<g clip-path="url(#plot-clip)">';
         segments.forEach(function (segment) {
-          var color = colorFor(segment.series, names);
+          var color = colorFor(segment.series, colorNames);
           if (config.lines && segment.points.length > 1) {
             var coords = segment.points.map(function (point) { return x(point.volume).toFixed(3) + "," + y(point.ph).toFixed(3); }).join(" ");
             svg += '<polyline points="' + coords + '" fill="none" stroke="' + color + '" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -352,15 +571,20 @@ import "./pwa";
         svg += '</g></svg>';
         chartHost.innerHTML = svg;
         downloadSvgButton.disabled = false;
-        buildLegend(names);
+        buildLegend(names, colorNames);
         chartTitle.textContent = config.title;
         chartExplanation.textContent = "Pontos inseridos; a linha apenas conecta leituras. Pontos fora dos limites não aparecem.";
       }
-      function renderDerivative(segments) {
+      function renderDerivative(segments, allValidHidden) {
         var slopes = getSlopes(segments);
         var config = getGraphConfig("derivative", slopes);
         if (!slopes.length) {
-          emptyMessage("Ainda não há variações calculáveis", "Informe ao menos duas leituras válidas, na mesma sequência, com volumes diferentes. A ferramenta calcula ΔpH/ΔV entre pontos consecutivos.");
+          emptyMessage(
+            allValidHidden ? "Todas as séries estão ocultas" : "Ainda não há variações calculáveis",
+            allValidHidden
+              ? "As leituras continuam salvas. Reative uma ou mais séries no painel Gerenciar séries para voltar a exibi-las."
+              : "Informe ao menos duas leituras válidas, na mesma sequência, com volumes diferentes. A ferramenta calcula ΔpH/ΔV entre pontos consecutivos."
+          );
           chartTitle.textContent = config.title;
           chartExplanation.textContent = "ΔpH/ΔV usa duas leituras consecutivas, em pH/mL. Valores negativos indicam queda do pH.";
           return;
@@ -387,9 +611,14 @@ import "./pwa";
         }
         var names = [];
         slopes.forEach(function (point) { if (names.indexOf(point.series) < 0) names.push(point.series); });
-        names.forEach(function (name) {
-          var seriesPoints = slopes.filter(function (point) { return point.series === name; });
-          var color = colorFor(name, names);
+        var colorNames = currentSeriesNames();
+        var slopeSegments = segments.map(function (segment) {
+          return { series: segment.series, points: getSlopes([segment]) };
+        }).filter(function (segment) { return segment.points.length > 0; });
+        slopeSegments.forEach(function (segment) {
+          var name = segment.series;
+          var seriesPoints = segment.points;
+          var color = colorFor(name, colorNames);
           if (config.lines && seriesPoints.length > 1) {
             svg += '<polyline points="' + seriesPoints.map(function (point) { return x(point.volume).toFixed(3) + "," + y(point.slope).toFixed(3); }).join(" ") + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
           }
@@ -404,18 +633,27 @@ import "./pwa";
         svg += "</svg>";
         chartHost.innerHTML = svg;
         downloadSvgButton.disabled = false;
-        buildLegend(names);
+        buildLegend(names, colorNames);
         chartTitle.textContent = config.title;
         chartExplanation.textContent = "ΔpH/ΔV é calculado entre leituras consecutivas. Valores negativos indicam queda do pH.";
       }
       function renderAll() {
+        ensureMeasurementIds(points);
+        syncEntrySeriesOptions();
         var state = getPointState();
         var valid = state.valid;
-        var segments = makeSegments(valid);
+        var allSegments = makeSegments(valid);
+        var visibleValid = valid.filter(function (point) { return isSeriesVisible(point.series); });
+        // Filtra segmentos já separados para não conectar pontos de uma série através de outra série oculta.
+        var segments = allSegments.filter(function (segment) { return isSeriesVisible(segment.series); });
         var slopes = getSlopes(segments);
+        var allValidHidden = valid.length > 0 && visibleValid.length === 0;
         settingsWarnings = [];
         updateChartDimensions();
-        syncSeriesColorControls();
+        var activeElement = document.activeElement;
+        var editingSeriesCell = activeElement && typeof activeElement.matches === "function" &&
+          activeElement.matches('#point-rows input[data-field="series"]');
+        if (!editingSeriesCell) syncSeriesColorControls();
         document.getElementById("stat-points").textContent = String(valid.length);
         if (valid.length) {
           var phValues = valid.map(function (point) { return point.ph; });
@@ -435,9 +673,7 @@ import "./pwa";
         document.getElementById("data-valid-count").textContent = String(valid.length);
         var exportCsvButton = document.getElementById("export-csv");
         if (exportCsvButton) exportCsvButton.disabled = points.length === 0;
-        var namesWithData = [];
-        valid.forEach(function (point) { if (namesWithData.indexOf(point.series) < 0) namesWithData.push(point.series); });
-        document.getElementById("data-series-count").textContent = String(namesWithData.length);
+        document.getElementById("data-series-count").textContent = String(currentSeriesNames().length);
         var reviewCount = state.incomplete + state.invalid;
         document.getElementById("data-review-count").textContent = String(reviewCount);
         document.getElementById("data-review-card").dataset.state = reviewCount > 0 ? "alert" : "normal";
@@ -445,7 +681,7 @@ import "./pwa";
         rowsEl.querySelectorAll("[data-series-swatch]").forEach(function (swatch) {
           var row = swatch.closest("tr");
           var index = Number(row && row.getAttribute("data-index"));
-          var name = points[index] ? (String(points[index].series || "").trim() || "Série A") : "Série A";
+          var name = points[index] ? effectiveSeriesName(points[index].series) : "Série A";
           swatch.style.backgroundColor = colorFor(name, activeNames);
         });
         rowsEl.querySelectorAll("tr").forEach(function (row, index) {
@@ -458,8 +694,8 @@ import "./pwa";
             input.setAttribute("aria-invalid", invalid ? "true" : "false");
           });
         });
-        if (currentView === "curve") renderCurve(segments, valid);
-        else renderDerivative(segments);
+        if (currentView === "curve") renderCurve(segments, visibleValid, allValidHidden);
+        else renderDerivative(segments, allValidHidden);
         settingsStatusEl.textContent = (settingsWarnings.length ? settingsWarnings.join(" ") + " " : "") +
           "Faixas e valores aceitam resolução de 0,001. As marcações automáticas se adaptam à faixa; intervalos que gerariam mais de 120 marcações são ampliados para legibilidade.";
         settingsStatusEl.classList.toggle("warn", settingsWarnings.length > 0);
@@ -484,9 +720,16 @@ import "./pwa";
       function captureEditorState() {
         return {
           points: points.map(function (point) {
-            return { series: String(point.series || ""), volume: String(point.volume || ""), ph: String(point.ph || "") };
+            return {
+              id: String(point.id || createMeasurementId()),
+              series: String(point.series == null ? "" : point.series),
+              volume: String(point.volume == null ? "" : point.volume),
+              ph: String(point.ph == null ? "" : point.ph)
+            };
           }),
           currentView: currentView,
+          seriesCatalog: seriesCatalog.slice(),
+          hiddenSeries: Object.assign({}, hiddenSeries),
           seriesColors: Object.assign({}, seriesColors),
           settings: collectSettings()
         };
@@ -537,8 +780,16 @@ import "./pwa";
       }
       function applyEditorState(snapshot) {
         points = cloneState(snapshot.points || []);
+        ensureMeasurementIds(points);
         currentView = snapshot.currentView === "derivative" ? "derivative" : "curve";
+        seriesCatalog = Array.isArray(snapshot.seriesCatalog)
+          ? snapshot.seriesCatalog.filter(function (name) { return typeof name === "string" && name !== ""; })
+          : [];
+        hiddenSeries = Object.assign({}, snapshot.hiddenSeries || {});
         seriesColors = Object.assign({}, snapshot.seriesColors || {});
+        ensureSeriesCatalogue();
+        syncEntrySeriesOptions();
+        if (currentSeriesNames().indexOf(entrySeriesInput.value) === -1) entrySeriesInput.value = currentSeriesNames()[0] || "Série A";
         SETTINGS_IDS.forEach(function (id) {
           if (!Object.prototype.hasOwnProperty.call(snapshot.settings || {}, id)) return;
           var element = document.getElementById(id);
@@ -629,12 +880,15 @@ import "./pwa";
             schemaVersion: 1,
             points: points.map(function (point) {
               return {
+                id: String(point.id || createMeasurementId()),
                 series: String(point.series == null ? "" : point.series).slice(0, 60),
                 volume: String(point.volume == null ? "" : point.volume).slice(0, 80),
                 ph: String(point.ph == null ? "" : point.ph).slice(0, 80)
               };
             }),
             currentView: currentView,
+            seriesCatalog: seriesCatalog.slice(),
+            hiddenSeries: Object.assign({}, hiddenSeries),
             seriesColors: seriesColors,
             settings: collectSettings()
           };
@@ -661,21 +915,33 @@ import "./pwa";
               return point && typeof point === "object";
             }).slice(0, 2000).map(function (point) {
               return {
+                id: String(point.id || ""),
                 series: String(point.series == null ? "" : point.series).slice(0, 60),
                 volume: String(point.volume == null ? "" : point.volume).slice(0, 80),
                 ph: String(point.ph == null ? "" : point.ph).slice(0, 80)
               };
             });
             restoredPoints = restoredPoints.filter(function (point) {
-              var seriesName = String(point.series || "").trim();
+              var seriesName = String(point.series == null ? "" : point.series);
               // Remove as linhas vazias automáticas das versões anteriores; preserva rascunhos incompletos digitados.
               return nonEmpty(point) || (seriesName !== "" && seriesName !== "Série A");
             });
-            if (restoredPoints.length) {
-              points = restoredPoints;
-              entrySeriesInput.value = String(points[points.length - 1].series || "").trim() || "Série A";
-            }
+            if (restoredPoints.length) points = restoredPoints;
           }
+          ensureMeasurementIds(points);
+          seriesCatalog = Array.isArray(saved.seriesCatalog)
+            ? saved.seriesCatalog.filter(function (name) { return typeof name === "string" && name !== ""; }).slice(0, 200)
+            : [];
+          hiddenSeries = {};
+          if (saved.hiddenSeries && typeof saved.hiddenSeries === "object") {
+            Object.keys(saved.hiddenSeries).forEach(function (name) {
+              if (saved.hiddenSeries[name] === true) hiddenSeries[name] = true;
+            });
+          }
+          ensureSeriesCatalogue();
+          if (points.length) entrySeriesInput.value = effectiveSeriesName(points[points.length - 1].series);
+          else if (currentSeriesNames().indexOf(entrySeriesInput.value) === -1) entrySeriesInput.value = currentSeriesNames()[0];
+          syncEntrySeriesOptions();
           if (saved.currentView === "curve" || saved.currentView === "derivative") currentView = saved.currentView;
           if (saved.settings && typeof saved.settings === "object") {
             SETTINGS_IDS.forEach(function (id) {
@@ -745,16 +1011,15 @@ import "./pwa";
           entryPhInput.focus();
           return;
         }
-        var series = String(entrySeriesInput.value || "").trim();
-        if (!series) {
-          series = points.length ? String(points[points.length - 1].series || "").trim() : "";
-          series = series || "Série A";
-        }
+        var series = String(entrySeriesInput.value == null ? "" : entrySeriesInput.value);
+        if (series === "") series = currentSeriesNames()[0] || "Série A";
+        series = registerSeriesName(series);
         recordUndoCheckpoint();
-        points.push({ series: series, volume: volumeText, ph: phText });
+        points.push({ id: createMeasurementId(), series: series, volume: volumeText, ph: phText });
         renderRows();
         renderAll();
         settleHistoryBaseline();
+        syncEntrySeriesOptions();
         entrySeriesInput.value = series;
         entryVolumeInput.value = "";
         entryPhInput.value = "";
@@ -825,12 +1090,19 @@ import "./pwa";
             series = "Série A"; volume = fields[0] || ""; ph = fields[1] || "";
           }
           if (String(volume).trim() === "" && String(ph).trim() === "") return;
-          imported.push({ series: String(series || "Série A").trim() || "Série A", volume: String(volume || "").trim(), ph: String(ph || "").trim() });
+          imported.push({
+            id: createMeasurementId(),
+            series: effectiveSeriesName(series),
+            volume: String(volume == null ? "" : volume).trim(),
+            ph: String(ph == null ? "" : ph).trim()
+          });
         });
         if (!imported.length) throw new Error("Não encontrei linhas com volume e pH. Verifique o cabeçalho e use ponto e vírgula para separar as colunas.");
         recordUndoCheckpoint();
         points = imported;
-        entrySeriesInput.value = String(imported[imported.length - 1].series || "").trim() || "Série A";
+        ensureSeriesCatalogue();
+        syncEntrySeriesOptions();
+        entrySeriesInput.value = effectiveSeriesName(imported[imported.length - 1].series);
         entryVolumeInput.value = "";
         entryPhInput.value = "";
         setEntryFeedback("Le CSV foi importado. Revise as leituras na tabela.", "success");
@@ -877,6 +1149,8 @@ import "./pwa";
           format: "graficos-investigacao-manual-settings-v1",
           currentView: currentView,
           settings: settings,
+          seriesCatalog: seriesCatalog.slice(),
+          hiddenSeries: Object.assign({}, hiddenSeries),
           seriesColors: seriesColors
         }, null, 2));
       });
@@ -905,6 +1179,20 @@ import "./pwa";
               });
             }
             seriesColors = colors;
+            if (Array.isArray(parsed.seriesCatalog)) {
+              seriesCatalog = parsed.seriesCatalog.filter(function (name) {
+                return typeof name === "string" && name !== "";
+              }).slice(0, 200);
+            }
+            if (parsed.hiddenSeries && typeof parsed.hiddenSeries === "object") {
+              hiddenSeries = {};
+              Object.keys(parsed.hiddenSeries).forEach(function (name) {
+                if (parsed.hiddenSeries[name] === true) hiddenSeries[name] = true;
+              });
+            }
+            ensureSeriesCatalogue();
+            syncEntrySeriesOptions();
+            if (currentSeriesNames().indexOf(entrySeriesInput.value) === -1) entrySeriesInput.value = currentSeriesNames()[0];
             colorNamesSignature = "";
             if (parsed.currentView === "curve" || parsed.currentView === "derivative") currentView = parsed.currentView;
             document.querySelectorAll("[data-view]").forEach(function (tab) {
@@ -924,7 +1212,7 @@ import "./pwa";
         if (!window.confirm("Limpar todos os pontos digitados?")) return;
         recordUndoCheckpoint();
         points = [];
-        entrySeriesInput.value = "Série A";
+        entrySeriesInput.value = currentSeriesNames()[0] || "Série A";
         entryVolumeInput.value = "";
         entryPhInput.value = "";
         setEntryFeedback("", "");
@@ -935,12 +1223,15 @@ import "./pwa";
       document.getElementById("load-example").addEventListener("click", function () {
         recordUndoCheckpoint();
         points = [
-          { series: "Exemplo", volume: "0", ph: "6,8" },
-          { series: "Exemplo", volume: "1", ph: "6,9" },
-          { series: "Exemplo", volume: "2", ph: "6,85" },
-          { series: "Exemplo", volume: "3", ph: "7,0" },
-          { series: "Exemplo", volume: "4", ph: "7,1" }
+          { id: createMeasurementId(), series: "Exemplo", volume: "0", ph: "6,8" },
+          { id: createMeasurementId(), series: "Exemplo", volume: "1", ph: "6,9" },
+          { id: createMeasurementId(), series: "Exemplo", volume: "2", ph: "6,85" },
+          { id: createMeasurementId(), series: "Exemplo", volume: "3", ph: "7,0" },
+          { id: createMeasurementId(), series: "Exemplo", volume: "4", ph: "7,1" }
         ];
+        registerSeriesName("Exemplo");
+        syncEntrySeriesOptions();
+        entrySeriesInput.value = "Exemplo";
         renderRows();
         renderAll();
         settleHistoryBaseline();
@@ -977,11 +1268,16 @@ import "./pwa";
         scheduleHistoryCheckpoint();
         renderAll();
       });
+      seriesCreateForm.addEventListener("submit", createSeriesFromForm);
+      seriesColorsEl.addEventListener("click", handleSeriesManagerAction);
       seriesColorsEl.addEventListener("input", function (event) {
-        var input = event.target.closest("input[data-series-color]");
+        var input = event.target.closest("input[data-series-color-index]");
         if (!input) return;
+        var index = Number(input.getAttribute("data-series-color-index"));
+        var name = currentSeriesNames()[index];
+        if (name == null) return;
         scheduleHistoryCheckpoint();
-        seriesColors[input.getAttribute("data-series-color")] = input.value;
+        seriesColors[name] = input.value;
         renderAll();
       });
       if (typeof window.addEventListener === "function") {
@@ -997,7 +1293,15 @@ import "./pwa";
         var index = Number(row && row.getAttribute("data-index"));
         if (!Number.isInteger(index) || !points[index]) return;
         scheduleHistoryCheckpoint();
-        points[index][input.getAttribute("data-field")] = input.value;
+        var field = input.getAttribute("data-field");
+        points[index][field] = input.value;
+        renderAll();
+      });
+      rowsEl.addEventListener("focusout", function (event) {
+        var input = event.target.closest('input[data-field="series"]');
+        if (!input) return;
+        registerSeriesName(input.value);
+        colorNamesSignature = "";
         renderAll();
       });
       rowsEl.addEventListener("click", function (event) {
@@ -1007,7 +1311,6 @@ import "./pwa";
         if (!Number.isInteger(index)) return;
         recordUndoCheckpoint();
         points.splice(index, 1);
-        if (!points.length) points.push({ series: "Série A", volume: "", ph: "" });
         renderRows();
         renderAll();
         settleHistoryBaseline();
@@ -1017,6 +1320,9 @@ import "./pwa";
       restorePanelStates();
       restoreWorkspaceView();
       restoreDraft();
+      ensureMeasurementIds(points);
+      ensureSeriesCatalogue();
+      syncEntrySeriesOptions();
       renderRows();
       renderAll();
       settleHistoryBaseline();

@@ -161,8 +161,9 @@
           <div class="measurement-entry-fields">
             <label class="measurement-field">
               <span>Série / amostra</span>
-              <input id="entry-series" type="text" maxlength="60" value="Série A" autocomplete="off" placeholder="Ex.: Amostra A" aria-describedby="entry-series-hint">
-              <small id="entry-series-hint">Mantenha o mesmo nome para agrupar leituras da mesma série.</small>
+              <input id="entry-series" type="text" maxlength="60" value="Série A" list="series-options" autocomplete="off" placeholder="Ex.: Amostra A" aria-describedby="entry-series-hint">
+              <datalist id="series-options"></datalist>
+              <small id="entry-series-hint">Escolha uma série existente ou digite um novo nome exato.</small>
             </label>
             <label class="measurement-field">
               <span>Volume adicionado · mL</span>
@@ -200,12 +201,22 @@
             <span>Adicione uma leitura no formulário acima ou importe uma planilha CSV.</span>
           </div>
         </div>
-        <details class="section-disclosure" id="series-colors-details" data-persist-open>
-          <summary>Cores das séries <span class="menu-caret" aria-hidden="true"></span></summary>
-          <fieldset class="series-color-panel">
-            <legend class="visually-hidden">Cores das séries</legend>
-            <div id="series-colors" class="series-color-list"><p class="hint">As cores aparecerão quando os dados forem preenchidos.</p></div>
-          </fieldset>
+        <details class="section-disclosure series-manager" id="series-colors-details" data-persist-open>
+          <summary>Gerenciar séries <span class="menu-caret" aria-hidden="true"></span></summary>
+          <div class="series-manager-intro">
+            Cada nome identifica uma série. Maiúsculas, minúsculas e espaços são considerados; nomes diferentes permanecem separados.
+          </div>
+          <form class="series-create-form" id="series-create-form" novalidate>
+            <label class="series-create-field" for="new-series-name">
+              <span>Nova série / amostra</span>
+              <input id="new-series-name" type="text" maxlength="60" autocomplete="off" placeholder="Ex.: Amostra B">
+            </label>
+            <button type="submit" class="primary" id="create-series">＋ Criar série</button>
+          </form>
+          <p class="series-manager-feedback" id="series-manager-feedback" role="status" aria-live="polite"></p>
+          <div id="series-colors" class="series-manager-list" role="group" aria-label="Séries cadastradas">
+            <p class="hint">Nenhuma série cadastrada.</p>
+          </div>
         </details>
         <p class="data-note" id="data-precision-note">Volume não pode ser negativo e o pH deve estar entre 0 e 14. Use vírgula ou ponto decimal; a análise aceita milésimos (0,001). Leituras incompletas ou fora desses limites não são plotadas.</p>
         <p id="validation" class="validation" data-state="empty" role="status" aria-live="polite">Preencha volume e pH para inserir pontos no gráfico.</p>
@@ -334,13 +345,13 @@ Amostra B;1;6,9</code>
                 <article class="export-card">
                   <div class="export-card-icon" aria-hidden="true">{ }</div>
                   <h3>Ajustes em JSON</h3>
-                  <p>Guarde ou recupere títulos, escalas, opções visuais e cores das séries.</p>
+                  <p>Guarde ou recupere títulos, escalas, cores, catálogo e visibilidade das séries.</p>
                   <div class="export-card-actions">
                     <button type="button" id="export-settings">Exportar ajustes</button>
                     <button type="button" id="import-settings">Importar ajustes</button>
                   </div>
                   <input class="visually-hidden" type="file" id="settings-file" accept=".json,application/json" tabindex="-1">
-                  <span class="export-card-meta">Este JSON contém configurações, não os dados experimentais.</span>
+                  <span class="export-card-meta">O JSON guarda ajustes e configurações das séries; as medições ficam no CSV.</span>
                 </article>
                 <article class="export-card">
                   <div class="export-card-icon" aria-hidden="true">▣</div>
@@ -350,7 +361,7 @@ Amostra B;1;6,9</code>
                   <span class="export-card-meta">A página será preparada com o gráfico selecionado.</span>
                 </article>
               </div>
-              <p class="export-note"><strong>Importante:</strong> o exportador de projeto completo em JSON ainda não está disponível. Para preservar as medições, use o CSV; o JSON desta versão guarda somente os ajustes do gráfico.</p>
+              <p class="export-note"><strong>Importante:</strong> o exportador de projeto completo ainda não está disponível. O CSV preserva as medições; o JSON desta versão guarda ajustes do gráfico e configurações de séries, mas não os valores experimentais.</p>
             </div>
           </section>
         </div>

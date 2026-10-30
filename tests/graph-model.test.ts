@@ -39,6 +39,27 @@ describe("validateMeasurementRows", () => {
     const result = validateMeasurementRows([{ series: "", volume: "1", ph: "7" }]);
     expect(result.valid[0]?.series).toBe("Série A");
   });
+
+  it("preserves series names exactly, including case and surrounding spaces", () => {
+    const names = ["Amostra", "amostra", "Amostra ", " Amostra"];
+    const result = validateMeasurementRows(names.map((series, index) => ({
+      series,
+      volume: String(index),
+      ph: "7"
+    })));
+    expect(result.valid.map(point => point.series)).toEqual(names);
+    expect(new Set(result.valid.map(point => point.series)).size).toBe(4);
+  });
+
+  it("preserves a stable internal measurement ID", () => {
+    const result = validateMeasurementRows([{
+      id: "measurement-001",
+      series: "A",
+      volume: "1",
+      ph: "7"
+    }]);
+    expect(result.valid[0]?.id).toBe("measurement-001");
+  });
 });
 
 describe("groupConsecutiveSegments and calculateSlopes", () => {
@@ -62,6 +83,22 @@ describe("groupConsecutiveSegments and calculateSlopes", () => {
     expect(slopes).toHaveLength(2);
     expect(slopes[0]).toMatchObject({ series: "A", fromVolume: 0, toVolume: 1, slope: 1 });
     expect(slopes[1]).toMatchObject({ series: "A", fromVolume: 1, toVolume: 2, slope: -1 });
+  });
+
+  it("keeps separate runs of a series when another series is filtered out", () => {
+    const mixedRuns: ValidMeasurement[] = [
+      { series: "A", volume: 0, ph: 6, index: 0 },
+      { series: "A", volume: 1, ph: 7, index: 1 },
+      { series: "B", volume: 0, ph: 8, index: 2 },
+      { series: "A", volume: 2, ph: 7.5, index: 3 },
+      { series: "A", volume: 3, ph: 8, index: 4 }
+    ];
+    const allSegments = groupConsecutiveSegments(mixedRuns);
+    const visibleASegments = allSegments.filter(segment => segment.series === "A");
+    const slopes = calculateSlopes(visibleASegments);
+
+    expect(visibleASegments.map(segment => segment.points.length)).toEqual([2, 2]);
+    expect(slopes.map(slope => [slope.fromVolume, slope.toVolume])).toEqual([[0, 1], [2, 3]]);
   });
 });
 
