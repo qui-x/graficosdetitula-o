@@ -12,6 +12,7 @@ import {
   validateCatmullRomShape,
   validateMeasurements
 } from "../app/src/titration-engine";
+import { TITRATION_PROJECT_SCHEMA_VERSION } from "../app/src/titration-contract";
 import type {
   MeasurementRecord,
   ProjectDocument,
@@ -42,7 +43,7 @@ const project = (
   revisions = { data: 1, scientific: 1 }
 ): ProjectDocument => ({
   format: "graficos-titulacao-project",
-  schemaVersion: 1,
+  schemaVersion: TITRATION_PROJECT_SCHEMA_VERSION,
   projectId: "project-1",
   name: "Teste",
   createdAt: "2026-10-29T12:00:00.000Z",
