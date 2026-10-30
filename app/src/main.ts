@@ -16,13 +16,15 @@ import "./pwa";
     "use strict";
     (function () {
       var COLORS = ["#087eaa", "#c44555", "#26836d", "#7856b5", "#d17a17", "#3972c6", "#a43b87", "#617d32"];
-      var points = [
-        { series: "Série A", volume: "", ph: "" },
-        { series: "Série A", volume: "", ph: "" },
-        { series: "Série A", volume: "", ph: "" }
-      ];
+      var points = [];
       var currentView = "curve";
       var rowsEl = document.getElementById("point-rows");
+      var tableEmptyStateEl = document.getElementById("table-empty-state");
+      var entryForm = document.getElementById("measurement-entry-form");
+      var entrySeriesInput = document.getElementById("entry-series");
+      var entryVolumeInput = document.getElementById("entry-volume");
+      var entryPhInput = document.getElementById("entry-ph");
+      var entryStatusEl = document.getElementById("entry-status");
       var chartHost = document.getElementById("chart-host");
       var legendEl = document.getElementById("series-legend");
       var validationEl = document.getElementById("validation");
@@ -44,7 +46,67 @@ import "./pwa";
       var historyTimer = null;
       var committedSnapshot = null;
       var PANEL_STORAGE_KEY = "graficos_investigacao_panels_v1";
-      var PANEL_IDS = ["data-panel", "chart-panel", "series-colors-details", "customization", "csv-import-help"];
+      var PANEL_IDS = ["series-colors-details", "customization", "csv-import-help"];
+      var WORKSPACE_VIEW_STORAGE_KEY = "graficos_investigacao_workspace_view_v1";
+      var WORKSPACE_VIEWS = ["data", "graph", "export"];
+
+      function applyWorkspaceView(view, persist, refresh) {
+        if (WORKSPACE_VIEWS.indexOf(view) === -1) view = "data";
+        document.querySelectorAll("[data-workspace-view]").forEach(function (tab) {
+          var selected = tab.getAttribute("data-workspace-view") === view;
+          tab.setAttribute("aria-selected", selected ? "true" : "false");
+          tab.setAttribute("tabindex", selected ? "0" : "-1");
+          tab.classList.toggle("is-active", selected);
+        });
+        document.querySelectorAll("[data-workspace-section]").forEach(function (section) {
+          section.hidden = section.getAttribute("data-workspace-section") !== view;
+        });
+        if (persist) {
+          try { localStorage.setItem(WORKSPACE_VIEW_STORAGE_KEY, view); }
+          catch (error) { /* A navegação continua funcional sem persistência. */ }
+        }
+        if (refresh) {
+          window.requestAnimationFrame(function () {
+            updateChartDimensions();
+            renderAll();
+          });
+        }
+      }
+
+      function setWorkspaceView(view) {
+        applyWorkspaceView(view, true, true);
+      }
+
+      function restoreWorkspaceView() {
+        var savedView = "data";
+        try {
+          var saved = localStorage.getItem(WORKSPACE_VIEW_STORAGE_KEY);
+          if (WORKSPACE_VIEWS.indexOf(saved) !== -1) savedView = saved;
+        } catch (error) {
+          // Inicia na etapa de dados quando o armazenamento não está disponível.
+        }
+        applyWorkspaceView(savedView, false, false);
+      }
+
+      function setupWorkspaceNavigation() {
+        var tabs = Array.prototype.slice.call(document.querySelectorAll("[data-workspace-view]"));
+        tabs.forEach(function (tab, index) {
+          tab.addEventListener("click", function () {
+            setWorkspaceView(tab.getAttribute("data-workspace-view"));
+          });
+          tab.addEventListener("keydown", function (event) {
+            var nextIndex = index;
+            if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = (index + 1) % tabs.length;
+            else if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = (index - 1 + tabs.length) % tabs.length;
+            else if (event.key === "Home") nextIndex = 0;
+            else if (event.key === "End") nextIndex = tabs.length - 1;
+            else return;
+            event.preventDefault();
+            tabs[nextIndex].focus();
+            setWorkspaceView(tabs[nextIndex].getAttribute("data-workspace-view"));
+          });
+        });
+      }
       var SETTINGS_IDS = [
         "cfg-curve-title", "cfg-curve-x-label", "cfg-curve-y-label",
         "cfg-curve-x-min", "cfg-curve-x-max", "cfg-curve-x-step",
@@ -100,6 +162,7 @@ import "./pwa";
             '<td data-label="Ação"><button type="button" class="remove-btn quiet" data-remove="' + index + '" aria-label="Remover ponto ' + (index + 1) + '" title="Remover ponto">×</button></td>' +
             '</tr>';
         }).join("");
+        if (tableEmptyStateEl) tableEmptyStateEl.hidden = points.length > 0;
       }
       function settingValue(id) {
         var element = document.getElementById(id);
@@ -370,6 +433,8 @@ import "./pwa";
         validationEl.dataset.state = state.invalid > 0 ? "warning" : valid.length > 0 ? "ready" : state.incomplete > 0 ? "warning" : "empty";
         document.getElementById("data-row-count").textContent = String(points.length);
         document.getElementById("data-valid-count").textContent = String(valid.length);
+        var exportCsvButton = document.getElementById("export-csv");
+        if (exportCsvButton) exportCsvButton.disabled = points.length === 0;
         var namesWithData = [];
         valid.forEach(function (point) { if (namesWithData.indexOf(point.series) < 0) namesWithData.push(point.series); });
         document.getElementById("data-series-count").textContent = String(namesWithData.length);
@@ -472,7 +537,6 @@ import "./pwa";
       }
       function applyEditorState(snapshot) {
         points = cloneState(snapshot.points || []);
-        if (!points.length) points = [{ series: "Série A", volume: "", ph: "" }];
         currentView = snapshot.currentView === "derivative" ? "derivative" : "curve";
         seriesColors = Object.assign({}, snapshot.seriesColors || {});
         SETTINGS_IDS.forEach(function (id) {
@@ -602,7 +666,15 @@ import "./pwa";
                 ph: String(point.ph == null ? "" : point.ph).slice(0, 80)
               };
             });
-            if (restoredPoints.length) points = restoredPoints;
+            restoredPoints = restoredPoints.filter(function (point) {
+              var seriesName = String(point.series || "").trim();
+              // Remove as linhas vazias automáticas das versões anteriores; preserva rascunhos incompletos digitados.
+              return nonEmpty(point) || (seriesName !== "" && seriesName !== "Série A");
+            });
+            if (restoredPoints.length) {
+              points = restoredPoints;
+              entrySeriesInput.value = String(points[points.length - 1].series || "").trim() || "Série A";
+            }
           }
           if (saved.currentView === "curve" || saved.currentView === "derivative") currentView = saved.currentView;
           if (saved.settings && typeof saved.settings === "object") {
@@ -630,15 +702,64 @@ import "./pwa";
           // Um rascunho corrompido não impede a abertura do editor.
         }
       }
+      function setEntryFeedback(message, state, invalidInput) {
+        [entrySeriesInput, entryVolumeInput, entryPhInput].forEach(function (input) {
+          input.removeAttribute("aria-invalid");
+        });
+        if (invalidInput) invalidInput.setAttribute("aria-invalid", "true");
+        entryStatusEl.textContent = message;
+        entryStatusEl.dataset.state = state || "info";
+      }
       function addPoint() {
+        var volumeText = String(entryVolumeInput.value || "").trim();
+        var phText = String(entryPhInput.value || "").trim();
+        if (!volumeText) {
+          setEntryFeedback("Informe o volume adicionado em mL.", "error", entryVolumeInput);
+          entryVolumeInput.focus();
+          return;
+        }
+        if (!phText) {
+          setEntryFeedback("Informe o pH medido.", "error", entryPhInput);
+          entryPhInput.focus();
+          return;
+        }
+        var volume = parseNumber(volumeText);
+        var ph = parseNumber(phText);
+        if (volume === null || Number.isNaN(volume) || !Number.isFinite(volume)) {
+          setEntryFeedback("O volume precisa ser um número válido. Use vírgula ou ponto decimal.", "error", entryVolumeInput);
+          entryVolumeInput.focus();
+          return;
+        }
+        if (volume < 0) {
+          setEntryFeedback("O volume não pode ser negativo.", "error", entryVolumeInput);
+          entryVolumeInput.focus();
+          return;
+        }
+        if (ph === null || Number.isNaN(ph) || !Number.isFinite(ph)) {
+          setEntryFeedback("O pH precisa ser um número válido. Use vírgula ou ponto decimal.", "error", entryPhInput);
+          entryPhInput.focus();
+          return;
+        }
+        if (ph < 0 || ph > 14) {
+          setEntryFeedback("O pH informado precisa estar entre 0 e 14.", "error", entryPhInput);
+          entryPhInput.focus();
+          return;
+        }
+        var series = String(entrySeriesInput.value || "").trim();
+        if (!series) {
+          series = points.length ? String(points[points.length - 1].series || "").trim() : "";
+          series = series || "Série A";
+        }
         recordUndoCheckpoint();
-        var series = points.length ? String(points[points.length - 1].series || "").trim() : "";
-        points.push({ series: series || "Série A", volume: "", ph: "" });
+        points.push({ series: series, volume: volumeText, ph: phText });
         renderRows();
         renderAll();
         settleHistoryBaseline();
-        var target = document.getElementById("volume-" + (points.length - 1));
-        if (target) target.focus();
+        entrySeriesInput.value = series;
+        entryVolumeInput.value = "";
+        entryPhInput.value = "";
+        setEntryFeedback("Leitura adicionada à tabela. Você pode continuar na mesma série ou trocar o nome.", "success");
+        entryVolumeInput.focus();
       }
       function download(name, type, text) {
         var blob = new Blob([text], { type: type });
@@ -709,11 +830,27 @@ import "./pwa";
         if (!imported.length) throw new Error("Não encontrei linhas com volume e pH. Verifique o cabeçalho e use ponto e vírgula para separar as colunas.");
         recordUndoCheckpoint();
         points = imported;
+        entrySeriesInput.value = String(imported[imported.length - 1].series || "").trim() || "Série A";
+        entryVolumeInput.value = "";
+        entryPhInput.value = "";
+        setEntryFeedback("Le CSV foi importado. Revise as leituras na tabela.", "success");
         renderRows();
         renderAll();
         settleHistoryBaseline();
       }
-      document.getElementById("add-point").addEventListener("click", addPoint);
+      entryForm.addEventListener("input", function (event) {
+        if (event.target && typeof event.target.removeAttribute === "function") {
+          event.target.removeAttribute("aria-invalid");
+        }
+        if (entryStatusEl.textContent) {
+          entryStatusEl.textContent = "";
+          entryStatusEl.removeAttribute("data-state");
+        }
+      });
+      entryForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        addPoint();
+      });
       undoButton.addEventListener("click", undoChange);
       redoButton.addEventListener("click", redoChange);
       document.getElementById("import-button").addEventListener("click", function () { document.getElementById("import-file").click(); });
@@ -786,7 +923,11 @@ import "./pwa";
       document.getElementById("clear-data").addEventListener("click", function () {
         if (!window.confirm("Limpar todos os pontos digitados?")) return;
         recordUndoCheckpoint();
-        points = [{ series: "Série A", volume: "", ph: "" }];
+        points = [];
+        entrySeriesInput.value = "Série A";
+        entryVolumeInput.value = "";
+        entryPhInput.value = "";
+        setEntryFeedback("", "");
         renderRows();
         renderAll();
         settleHistoryBaseline();
@@ -804,7 +945,12 @@ import "./pwa";
         renderAll();
         settleHistoryBaseline();
       });
-      document.getElementById("print-chart").addEventListener("click", function () { window.print(); });
+      document.getElementById("print-chart").addEventListener("click", function () {
+        setWorkspaceView("graph");
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () { window.print(); });
+        });
+      });
       downloadSvgButton.addEventListener("click", function () {
         var svg = chartHost.querySelector("svg");
         if (!svg) return;
@@ -866,8 +1012,10 @@ import "./pwa";
         renderAll();
         settleHistoryBaseline();
       });
+      setupWorkspaceNavigation();
       setupPanelDisclosures();
       restorePanelStates();
+      restoreWorkspaceView();
       restoreDraft();
       renderRows();
       renderAll();
@@ -911,6 +1059,7 @@ import "./pwa";
         }
         if (key === "enter" && !event.shiftKey) {
           event.preventDefault();
+          setWorkspaceView("data");
           addPoint();
           return;
         }
