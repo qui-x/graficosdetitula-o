@@ -885,6 +885,29 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
     .series-manager-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
     .series-manager-actions button { min-height: 38px; padding: .35rem .65rem; font-size: .74rem; }
     .series-manager-actions button[aria-pressed="false"] { border-style: dashed; color: var(--muted); }
+    .series-manager-actions button[data-series-action="delete"] {
+      border: 1px solid #874550;
+      background: #351e26;
+      color: #ffc1c5;
+    }
+    .series-manager-actions button[data-series-action="delete"]:hover {
+      border-color: #b65b69;
+      background: #48242e;
+    }
+    :root[data-theme="light"] .series-manager-actions button[data-series-action="delete"] {
+      border-color: #ddb8be;
+      background: #fff0f1;
+      color: #8e2434;
+    }
+    :root[data-theme="light"] .series-manager-actions button[data-series-action="delete"]:hover {
+      border-color: #c87b87;
+      background: #ffe4e7;
+    }
+    :root[data-contrast="on"] .series-manager-actions button[data-series-action="delete"] {
+      border-color: #fff !important;
+      background: #000 !important;
+      color: #ff0 !important;
+    }
     :root[data-theme="light"] .series-create-form { background: #f8fafc; border-color: #cbd7e2; }
     :root[data-theme="light"] .series-create-field input,
     :root[data-theme="light"] .series-manager-name-field input,
