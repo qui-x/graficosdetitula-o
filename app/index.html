@@ -334,10 +334,13 @@ Amostra B;1;6,9</code>
               <div class="export-grid">
                 <article class="export-card">
                   <div class="export-card-icon" aria-hidden="true">↗</div>
-                  <h3>Gráfico em SVG</h3>
-                  <p>Imagem vetorial do gráfico selecionado, adequada para inserir em relatórios e documentos.</p>
-                  <button type="button" id="download-svg" class="primary" disabled>Baixar SVG</button>
-                  <span class="export-card-meta">Usa a visualização ativa: pH × volume ou ΔpH/ΔV.</span>
+                  <h3>Gráfico · SVG ou PDF</h3>
+                  <p>Exporte a visualização ativa como imagem vetorial ou prepare a impressão para salvar em PDF.</p>
+                  <div class="export-card-actions">
+                    <button type="button" id="download-svg" class="primary" disabled>Baixar SVG</button>
+                    <button type="button" id="print-chart">Imprimir / PDF</button>
+                  </div>
+                  <span class="export-card-meta">Usa o gráfico ativo: pH × volume ou ΔpH/ΔV.</span>
                 </article>
                 <article class="export-card">
                   <div class="export-card-icon" aria-hidden="true">▤</div>
@@ -357,13 +360,7 @@ Amostra B;1;6,9</code>
                   <input class="visually-hidden" type="file" id="settings-file" accept=".json,application/json" tabindex="-1">
                   <span class="export-card-meta">O JSON guarda ajustes e configurações das séries; as medições ficam no CSV.</span>
                 </article>
-                <article class="export-card">
-                  <div class="export-card-icon" aria-hidden="true">▣</div>
-                  <h3>Imprimir ou salvar em PDF</h3>
-                  <p>Abra a visualização de impressão do gráfico atual. No diálogo do navegador, escolha uma impressora ou “Salvar como PDF”.</p>
-                  <button type="button" id="print-chart">Preparar impressão</button>
-                  <span class="export-card-meta">A página será preparada com o gráfico selecionado.</span>
-                </article>
+
                 <article class="export-card project-export-card">
                   <div class="export-card-icon" aria-hidden="true">{ JSON }</div>
                   <h3>Projeto completo em JSON</h3>

@@ -554,3 +554,63 @@
 @media (prefers-reduced-motion: reduce) {
   .project-manager-dialog::backdrop { backdrop-filter: none; }
 }
+
+
+/* Um comando principal por projeto; operações administrativas ficam agrupadas. */
+.project-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: .45rem;
+}
+.project-card-actions > .project-card-open {
+  min-width: 88px;
+  min-height: 40px;
+  padding: .42rem .8rem;
+  border-radius: 9px;
+  font-size: .78rem;
+}
+.project-card-more { margin: 0; }
+.project-card-more > summary {
+  min-width: 82px;
+  min-height: 40px;
+}
+.project-card-more .compact-action-menu-items {
+  min-width: 178px;
+}
+.project-card-more .compact-action-menu-items button[data-project-action="delete"] {
+  border-color: #70404a;
+  background: #321e26;
+  color: #ffc1c5;
+}
+:root[data-theme="light"] .project-card-more .compact-action-menu-items button[data-project-action="delete"] {
+  border-color: #ddb8be;
+  background: #fff0f1;
+  color: #8e2434;
+}
+:root[data-contrast="on"] .project-card-more .compact-action-menu-items button[data-project-action="delete"] {
+  border-color: #fff !important;
+  background: #000 !important;
+  color: #ff0 !important;
+}
+@media (max-width: 860px) {
+  .project-card-actions { justify-content: flex-start; }
+}
+@media (max-width: 620px) {
+  .project-card-actions {
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: .4rem;
+  }
+  .project-card-actions > .project-card-open {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+  .project-card-more > summary { min-height: 44px; }
+}
+@media (max-width: 380px) {
+  .project-card-actions { display: flex; }
+  .project-card-actions > .project-card-open { flex: 1 1 auto; }
+}

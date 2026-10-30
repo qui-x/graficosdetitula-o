@@ -366,10 +366,15 @@ import "./pwa";
               '<span class="series-manager-count">' + count + (count === 1 ? " leitura" : " leituras") + '</span>' +
             '</div>' +
             '<div class="series-manager-actions">' +
-              '<button type="button" data-series-action="rename" data-series-index="' + index + '">Salvar nome</button>' +
-              '<button type="button" data-series-action="duplicate" data-series-index="' + index + '">Duplicar leituras</button>' +
-              '<button type="button" data-series-action="visibility" data-series-index="' + index + '" aria-pressed="' + (visible ? "true" : "false") + '">' + visibilityLabel + '</button>' +
-              '<button type="button" class="series-delete-button" data-series-action="delete" data-series-index="' + index + '" aria-label="Excluir série ' + escapeHTML(name) + '" title="Excluir esta série e seus registros">Excluir série</button>' +
+              '<button type="button" class="series-save-button" data-series-action="rename" data-series-index="' + index + '" aria-label="Salvar nome da série ' + escapeHTML(name) + '">Salvar</button>' +
+              '<button type="button" class="series-visibility-button" data-series-action="visibility" data-series-index="' + index + '" aria-pressed="' + (visible ? "true" : "false") + '" aria-label="' + visibilityLabel + ' série ' + escapeHTML(name) + '">' + (visible ? "Ocultar" : "Mostrar") + '</button>' +
+              '<details class="compact-action-menu series-actions-menu">' +
+                '<summary class="compact-action-menu-trigger" aria-label="Mais ações para série ' + escapeHTML(name) + '" title="Duplicar ou excluir série">Mais</summary>' +
+                '<div class="compact-action-menu-items">' +
+                  '<button type="button" data-series-action="duplicate" data-series-index="' + index + '">Duplicar leituras</button>' +
+                  '<button type="button" class="is-destructive" data-series-action="delete" data-series-index="' + index + '" aria-label="Excluir série ' + escapeHTML(name) + '">Excluir série</button>' +
+                '</div>' +
+              '</details>' +
             '</div>' +
           '</article>';
         }).join("");
@@ -929,9 +934,9 @@ import "./pwa";
         document.addEventListener("click", function (event) {
           var target = event.target;
           var elementTarget = target instanceof Element ? target : null;
-          var clickedMenu = elementTarget ? elementTarget.closest(".action-menu") : null;
+          var clickedMenu = elementTarget ? elementTarget.closest(".action-menu, .compact-action-menu") : null;
           var clickedSummary = elementTarget ? elementTarget.closest("summary") : null;
-          document.querySelectorAll(".action-menu[open]").forEach(function (menu) {
+          document.querySelectorAll(".action-menu[open], .compact-action-menu[open]").forEach(function (menu) {
             var clickedAnOption = clickedMenu === menu && !clickedSummary;
             if (!(target instanceof Node) || !menu.contains(target) || clickedAnOption) menu.open = false;
           });
@@ -1682,7 +1687,7 @@ import "./pwa";
       window.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
           var closedAny = false;
-          document.querySelectorAll(".action-menu[open], #a11y-menu[open]").forEach(function (menu) {
+          document.querySelectorAll(".action-menu[open], .compact-action-menu[open], #a11y-menu[open]").forEach(function (menu) {
             menu.open = false;
             closedAny = true;
             var summary = menu.querySelector("summary");
