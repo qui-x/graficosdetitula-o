@@ -516,11 +516,16 @@ import "./pwa";
         downloadSvgButton.disabled = true;
         legendEl.innerHTML = "";
       }
-      function renderCurve(segments, validPoints) {
+      function renderCurve(segments, validPoints, allValidHidden) {
         var derived = validPoints.map(function (point) { return { series: point.series, volume: point.volume, ph: point.ph }; });
         var config = getGraphConfig("curve", derived);
         if (!validPoints.length) {
-          emptyMessage("O gráfico aparecerá aqui", "Preencha volume e pH em pelo menos uma linha para mostrar os pontos informados.");
+          emptyMessage(
+            allValidHidden ? "Todas as séries estão ocultas" : "O gráfico aparecerá aqui",
+            allValidHidden
+              ? "As leituras continuam salvas. Reative uma ou mais séries no painel Gerenciar séries para voltar a exibi-las."
+              : "Preencha volume e pH em pelo menos uma linha para mostrar os pontos informados."
+          );
           chartTitle.textContent = config.title;
           chartExplanation.textContent = "O gráfico conecta apenas os pontos digitados. Não há curva prevista nem valores calculados automaticamente.";
           return;
@@ -563,11 +568,16 @@ import "./pwa";
         chartTitle.textContent = config.title;
         chartExplanation.textContent = "Pontos inseridos; a linha apenas conecta leituras. Pontos fora dos limites não aparecem.";
       }
-      function renderDerivative(segments) {
+      function renderDerivative(segments, allValidHidden) {
         var slopes = getSlopes(segments);
         var config = getGraphConfig("derivative", slopes);
         if (!slopes.length) {
-          emptyMessage("Ainda não há variações calculáveis", "Informe ao menos duas leituras válidas, na mesma sequência, com volumes diferentes. A ferramenta calcula ΔpH/ΔV entre pontos consecutivos.");
+          emptyMessage(
+            allValidHidden ? "Todas as séries estão ocultas" : "Ainda não há variações calculáveis",
+            allValidHidden
+              ? "As leituras continuam salvas. Reative uma ou mais séries no painel Gerenciar séries para voltar a exibi-las."
+              : "Informe ao menos duas leituras válidas, na mesma sequência, com volumes diferentes. A ferramenta calcula ΔpH/ΔV entre pontos consecutivos."
+          );
           chartTitle.textContent = config.title;
           chartExplanation.textContent = "ΔpH/ΔV usa duas leituras consecutivas, em pH/mL. Valores negativos indicam queda do pH.";
           return;
@@ -616,10 +626,17 @@ import "./pwa";
         chartExplanation.textContent = "ΔpH/ΔV é calculado entre leituras consecutivas. Valores negativos indicam queda do pH.";
       }
       function renderAll() {
+        ensureMeasurementIds(points);
+        ensureSeriesCatalogue();
+        syncEntrySeriesOptions();
         var state = getPointState();
         var valid = state.valid;
-        var segments = makeSegments(valid);
+        var allSegments = makeSegments(valid);
+        var visibleValid = valid.filter(function (point) { return isSeriesVisible(point.series); });
+        // Filtra segmentos já separados para não conectar pontos de uma série através de outra série oculta.
+        var segments = allSegments.filter(function (segment) { return isSeriesVisible(segment.series); });
         var slopes = getSlopes(segments);
+        var allValidHidden = valid.length > 0 && visibleValid.length === 0;
         settingsWarnings = [];
         updateChartDimensions();
         syncSeriesColorControls();
@@ -642,9 +659,7 @@ import "./pwa";
         document.getElementById("data-valid-count").textContent = String(valid.length);
         var exportCsvButton = document.getElementById("export-csv");
         if (exportCsvButton) exportCsvButton.disabled = points.length === 0;
-        var namesWithData = [];
-        valid.forEach(function (point) { if (namesWithData.indexOf(point.series) < 0) namesWithData.push(point.series); });
-        document.getElementById("data-series-count").textContent = String(namesWithData.length);
+        document.getElementById("data-series-count").textContent = String(currentSeriesNames().length);
         var reviewCount = state.incomplete + state.invalid;
         document.getElementById("data-review-count").textContent = String(reviewCount);
         document.getElementById("data-review-card").dataset.state = reviewCount > 0 ? "alert" : "normal";
@@ -652,7 +667,7 @@ import "./pwa";
         rowsEl.querySelectorAll("[data-series-swatch]").forEach(function (swatch) {
           var row = swatch.closest("tr");
           var index = Number(row && row.getAttribute("data-index"));
-          var name = points[index] ? (String(points[index].series || "").trim() || "Série A") : "Série A";
+          var name = points[index] ? effectiveSeriesName(points[index].series) : "Série A";
           swatch.style.backgroundColor = colorFor(name, activeNames);
         });
         rowsEl.querySelectorAll("tr").forEach(function (row, index) {
@@ -665,8 +680,8 @@ import "./pwa";
             input.setAttribute("aria-invalid", invalid ? "true" : "false");
           });
         });
-        if (currentView === "curve") renderCurve(segments, valid);
-        else renderDerivative(segments);
+        if (currentView === "curve") renderCurve(segments, visibleValid, allValidHidden);
+        else renderDerivative(segments, allValidHidden);
         settingsStatusEl.textContent = (settingsWarnings.length ? settingsWarnings.join(" ") + " " : "") +
           "Faixas e valores aceitam resolução de 0,001. As marcações automáticas se adaptam à faixa; intervalos que gerariam mais de 120 marcações são ampliados para legibilidade.";
         settingsStatusEl.classList.toggle("warn", settingsWarnings.length > 0);
