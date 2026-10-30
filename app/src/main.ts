@@ -1135,6 +1135,8 @@ import "./pwa";
           format: "graficos-investigacao-manual-settings-v1",
           currentView: currentView,
           settings: settings,
+          seriesCatalog: seriesCatalog.slice(),
+          hiddenSeries: Object.assign({}, hiddenSeries),
           seriesColors: seriesColors
         }, null, 2));
       });
@@ -1163,6 +1165,20 @@ import "./pwa";
               });
             }
             seriesColors = colors;
+            if (Array.isArray(parsed.seriesCatalog)) {
+              seriesCatalog = parsed.seriesCatalog.filter(function (name) {
+                return typeof name === "string" && name !== "";
+              }).slice(0, 200);
+            }
+            if (parsed.hiddenSeries && typeof parsed.hiddenSeries === "object") {
+              hiddenSeries = {};
+              Object.keys(parsed.hiddenSeries).forEach(function (name) {
+                if (parsed.hiddenSeries[name] === true) hiddenSeries[name] = true;
+              });
+            }
+            ensureSeriesCatalogue();
+            syncEntrySeriesOptions();
+            if (currentSeriesNames().indexOf(entrySeriesInput.value) === -1) entrySeriesInput.value = currentSeriesNames()[0];
             colorNamesSignature = "";
             if (parsed.currentView === "curve" || parsed.currentView === "derivative") currentView = parsed.currentView;
             document.querySelectorAll("[data-view]").forEach(function (tab) {
@@ -1193,12 +1209,15 @@ import "./pwa";
       document.getElementById("load-example").addEventListener("click", function () {
         recordUndoCheckpoint();
         points = [
-          { series: "Exemplo", volume: "0", ph: "6,8" },
-          { series: "Exemplo", volume: "1", ph: "6,9" },
-          { series: "Exemplo", volume: "2", ph: "6,85" },
-          { series: "Exemplo", volume: "3", ph: "7,0" },
-          { series: "Exemplo", volume: "4", ph: "7,1" }
+          { id: createMeasurementId(), series: "Exemplo", volume: "0", ph: "6,8" },
+          { id: createMeasurementId(), series: "Exemplo", volume: "1", ph: "6,9" },
+          { id: createMeasurementId(), series: "Exemplo", volume: "2", ph: "6,85" },
+          { id: createMeasurementId(), series: "Exemplo", volume: "3", ph: "7,0" },
+          { id: createMeasurementId(), series: "Exemplo", volume: "4", ph: "7,1" }
         ];
+        registerSeriesName("Exemplo");
+        syncEntrySeriesOptions();
+        entrySeriesInput.value = "Exemplo";
         renderRows();
         renderAll();
         settleHistoryBaseline();
