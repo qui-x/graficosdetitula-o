@@ -110,15 +110,19 @@
       <nav class="workspace-nav" role="tablist" aria-label="Etapas do editor">
         <button class="workspace-step" id="step-data" type="button" role="tab" data-workspace-view="data" aria-selected="true" aria-controls="workspace-data" tabindex="0">
           <span class="workspace-step-index" aria-hidden="true">1</span>
-          <span class="workspace-step-copy"><strong>Dados</strong><small>Inserir leituras</small></span>
+          <span class="workspace-step-copy"><strong>Dados</strong><small>Inserir e organizar</small></span>
+        </button>
+        <button class="workspace-step" id="step-analysis" type="button" role="tab" data-workspace-view="analysis" aria-selected="false" aria-controls="workspace-analysis" tabindex="-1">
+          <span class="workspace-step-index" aria-hidden="true">2</span>
+          <span class="workspace-step-copy"><strong>Análise</strong><small>Escolher representação</small></span>
         </button>
         <button class="workspace-step" id="step-graph" type="button" role="tab" data-workspace-view="graph" aria-selected="false" aria-controls="workspace-graph" tabindex="-1">
-          <span class="workspace-step-index" aria-hidden="true">2</span>
-          <span class="workspace-step-copy"><strong>Gráfico</strong><small>Visualizar e analisar</small></span>
+          <span class="workspace-step-index" aria-hidden="true">3</span>
+          <span class="workspace-step-copy"><strong>Gráfico</strong><small>Visualizar e personalizar</small></span>
         </button>
         <button class="workspace-step" id="step-export" type="button" role="tab" data-workspace-view="export" aria-selected="false" aria-controls="workspace-export" tabindex="-1">
-          <span class="workspace-step-index" aria-hidden="true">3</span>
-          <span class="workspace-step-copy"><strong>Exportar</strong><small>Baixar e imprimir</small></span>
+          <span class="workspace-step-index" aria-hidden="true">4</span>
+          <span class="workspace-step-copy"><strong>Exportar</strong><small>Baixar e compartilhar</small></span>
         </button>
       </nav>
       <div class="workspace-views">
@@ -154,6 +158,16 @@
             <span id="history-status" class="visually-hidden" aria-live="polite">Histórico de alterações vazio.</span>
           </div>
         </div>
+        <details id="csv-import-help" data-persist-open>
+          <summary>Formato para importar dados de uma planilha</summary>
+          <p>CSV separado por ponto e vírgula, com cabeçalho. Série é opcional; volume e pH são obrigatórios.</p>
+          <code class="csv-example">Série;Volume (mL);pH
+Amostra A;0;3,2
+Amostra A;1;3,5
+Amostra A;2;4,1
+Amostra B;0;6,8
+Amostra B;1;6,9</code>
+        </details>
         <form class="measurement-entry" id="measurement-entry-form" novalidate aria-labelledby="entry-heading">
           <div class="measurement-entry-heading">
             <div>
@@ -228,26 +242,77 @@
         <div class="workflow-advance">
           <div class="workflow-advance-copy">
             <span class="workflow-step-kicker">Próxima etapa</span>
-            <strong>Visualize e analise os dados</strong>
-            <p>Depois de registrar as leituras, escolha o gráfico e revise sua apresentação.</p>
+            <strong>Escolha como analisar as leituras</strong>
+            <p>Selecione a representação que deseja explorar antes de visualizar o gráfico.</p>
           </div>
-          <button type="button" class="primary" data-workspace-destination="graph">Ir para Gráfico <span aria-hidden="true">→</span></button>
+          <button type="button" class="primary" data-workspace-destination="analysis">Ir para Análise <span aria-hidden="true">→</span></button>
         </div>
       </section>
+        </div>
+        <div class="workspace-step-view" id="workspace-analysis" data-workspace-section="analysis" role="tabpanel" aria-labelledby="step-analysis" tabindex="0" hidden>
+          <section class="panel workspace-panel analysis-panel" aria-labelledby="analysis-heading">
+            <div class="panel-head">
+              <span class="panel-title-copy">
+                <span class="panel-summary-title" id="analysis-heading">Escolher representação analítica</span>
+                <span class="hint">Selecione como deseja relacionar os resultados experimentais antes de abrir o gráfico.</span>
+              </span>
+            </div>
+            <div class="analysis-content">
+              <div class="analysis-representation-grid" role="group" aria-label="Representações disponíveis para análise">
+                <button type="button" class="analysis-representation-choice" data-view="curve" aria-pressed="true">
+                  <span class="analysis-choice-symbol" aria-hidden="true">pH</span>
+                  <span class="analysis-choice-copy">
+                    <strong>pH × volume</strong>
+                    <span>Relaciona o pH medido ao volume de titulante adicionado. Cada ponto corresponde a uma leitura registrada.</span>
+                    <small>Use para acompanhar a variação do pH ao longo da titulação.</small>
+                  </span>
+                  <span class="analysis-choice-state">Selecionada</span>
+                </button>
+                <button type="button" class="analysis-representation-choice" data-view="derivative" aria-pressed="false">
+                  <span class="analysis-choice-symbol" aria-hidden="true">Δ</span>
+                  <span class="analysis-choice-copy">
+                    <strong>ΔpH/ΔV</strong>
+                    <span>Apresenta a variação do pH por volume entre leituras consecutivas da mesma série, em pH/mL.</span>
+                    <small>Use para examinar mudanças mais acentuadas entre medições.</small>
+                  </span>
+                  <span class="analysis-choice-state">Selecionar</span>
+                </button>
+              </div>
+              <p class="analysis-science-note"><strong>Interpretação dos resultados:</strong> ΔpH/ΔV é uma razão calculada entre medições consecutivas; não representa uma medição direta nem uma previsão da curva. A seleção altera a representação exibida, não modifica as leituras originais.</p>
+              <p id="analysis-selection-status" class="analysis-selection-status" role="status" aria-live="polite">Representação selecionada: pH × volume.</p>
+            </div>
+            <div class="workflow-advance workflow-advance-split">
+              <button type="button" class="secondary" data-workspace-destination="data">← Voltar para Dados</button>
+              <div class="workflow-advance-copy">
+                <span class="workflow-step-kicker">Próxima etapa</span>
+                <strong>Visualize a representação escolhida</strong>
+                <p>Abra o gráfico para conferir as séries, escalas, rótulos e demais ajustes.</p>
+              </div>
+              <button type="button" class="primary" data-workspace-destination="graph">Ir para Gráfico <span aria-hidden="true">→</span></button>
+            </div>
+          </section>
         </div>
         <div class="workspace-step-view" id="workspace-graph" data-workspace-section="graph" role="tabpanel" aria-labelledby="step-graph" tabindex="0" hidden>
       <section class="panel workspace-panel" id="chart-panel" aria-labelledby="grafico-heading">
         <div class="panel-head">
           <span class="panel-title-copy">
             <span class="panel-summary-title" id="grafico-heading">Gráfico da titulação</span>
-            <span class="hint">Compare a curva pH × volume com a análise avançada ΔpH/ΔV.</span>
+            <span class="hint">Confira a visualização e ajuste sua apresentação. A representação é escolhida na etapa Análise.</span>
           </span>
         </div>
-        <div class="chart-controls">
-          <div class="tabs" role="tablist" aria-label="Tipo de gráfico">
-            <button type="button" role="tab" id="tab-curve" data-view="curve" aria-selected="true" aria-controls="chart-host">pH × volume</button>
-            <button type="button" role="tab" id="tab-derivative" data-view="derivative" aria-selected="false" aria-controls="chart-host">ΔpH/ΔV</button>
+        <div class="chart-body">
+          <h3 id="chart-title" class="chart-title">pH medido por volume adicionado</h3>
+          <div id="chart-host" class="chart-surface" aria-live="polite">
+            <div class="empty-state"><strong>O gráfico aparecerá aqui</strong><p>Insira pelo menos um ponto com volume e pH válidos. Para calcular ΔpH/ΔV, informe duas leituras com volumes diferentes na mesma sequência.</p></div>
           </div>
+          <div id="series-legend" class="legend" aria-label="Legenda das séries"></div>
+          <div class="stats" aria-label="Resumo dos dados">
+            <div class="stat"><span class="stat-label">Pontos válidos</span><span id="stat-points" class="stat-value">0</span></div>
+            <div class="stat"><span class="stat-label">Intervalo de pH</span><span id="stat-range" class="stat-value">—</span></div>
+            <div class="stat"><span class="stat-label">Variações calculáveis</span><span id="stat-slopes" class="stat-value">0</span></div>
+          </div>
+          <p id="chart-explanation" class="chart-explanation">O gráfico conecta os pontos informados. A linha não representa uma previsão científica.</p>
+
         </div>
         <section class="series-visibility-panel" aria-labelledby="series-visibility-heading">
           <div class="series-visibility-heading">
@@ -261,6 +326,7 @@
           </div>
           <p id="series-visibility-status" class="series-visibility-status" role="status" aria-live="polite"></p>
         </section>
+
         <details class="customization" id="customization" data-persist-open>
           <summary>Personalizar gráficos</summary>
           <p class="customization-intro">Campos vazios usam escala automática. Intervalo mínimo: 0,001.</p>
@@ -318,32 +384,10 @@
           </div>
           <p id="settings-status" class="settings-status" role="status" aria-live="polite">Intervalos manuais aceitam incrementos de 0,001. Se houver mais de 120 marcações, a escala será espaçada automaticamente para manter a leitura.</p>
         </details>
-        <div class="chart-body">
-          <h3 id="chart-title" class="chart-title">pH medido por volume adicionado</h3>
-          <div id="chart-host" class="chart-surface" aria-live="polite">
-            <div class="empty-state"><strong>O gráfico aparecerá aqui</strong><p>Insira pelo menos um ponto com volume e pH válidos. Para calcular ΔpH/ΔV, informe duas leituras com volumes diferentes na mesma sequência.</p></div>
-          </div>
-          <div id="series-legend" class="legend" aria-label="Legenda das séries"></div>
-          <div class="stats" aria-label="Resumo dos dados">
-            <div class="stat"><span class="stat-label">Pontos válidos</span><span id="stat-points" class="stat-value">0</span></div>
-            <div class="stat"><span class="stat-label">Intervalo de pH</span><span id="stat-range" class="stat-value">—</span></div>
-            <div class="stat"><span class="stat-label">Variações calculáveis</span><span id="stat-slopes" class="stat-value">0</span></div>
-          </div>
-          <p id="chart-explanation" class="chart-explanation">O gráfico conecta os pontos informados. A linha não representa uma previsão científica.</p>
-          <details id="csv-import-help" data-persist-open>
-            <summary>Formato para importar dados de uma planilha</summary>
-            <p>CSV separado por ponto e vírgula, com cabeçalho. Série é opcional; volume e pH são obrigatórios.</p>
-            <code class="csv-example">Série;Volume (mL);pH
-Amostra A;0;3,2
-Amostra A;1;3,5
-Amostra A;2;4,1
-Amostra B;0;6,8
-Amostra B;1;6,9</code>
-          </details>
-        </div>
+
       </section>
           <div class="workflow-advance workflow-advance-split">
-            <button type="button" class="secondary" data-workspace-destination="data">← Voltar para Dados</button>
+            <button type="button" class="secondary" data-workspace-destination="analysis">← Voltar para Análise</button>
             <div class="workflow-advance-copy">
               <span class="workflow-step-kicker">Próxima etapa</span>
               <strong>Guardar ou compartilhar resultados</strong>
@@ -376,8 +420,11 @@ Amostra B;1;6,9</code>
                   <div class="export-card-icon" aria-hidden="true">▤</div>
                   <h3>Leituras em CSV</h3>
                   <p>Arquivo tabular com os valores digitados, para abrir em uma planilha ou reutilizar em outra análise.</p>
-                  <button type="button" id="export-csv">Exportar dados CSV</button>
-                  <span class="export-card-meta">Inclui as leituras registradas na tabela.</span>
+                  <div class="export-card-actions">
+                    <button type="button" id="export-csv">CSV Brasil (;)</button>
+                    <button type="button" id="export-csv-international">CSV internacional (,)</button>
+                  </div>
+                  <span class="export-card-meta">Os dois arquivos preservam as mesmas leituras. Escolha o delimitador decimal e de campos compatível com seu programa de planilhas.</span>
                 </article>
                 <article class="export-card">
                   <div class="export-card-icon" aria-hidden="true">{ }</div>
