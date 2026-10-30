@@ -50,6 +50,16 @@ describe("validateMeasurementRows", () => {
     expect(result.valid.map(point => point.series)).toEqual(names);
     expect(new Set(result.valid.map(point => point.series)).size).toBe(4);
   });
+
+  it("preserves a stable internal measurement ID", () => {
+    const result = validateMeasurementRows([{
+      id: "measurement-001",
+      series: "A",
+      volume: "1",
+      ph: "7"
+    }]);
+    expect(result.valid[0]?.id).toBe("measurement-001");
+  });
 });
 
 describe("groupConsecutiveSegments and calculateSlopes", () => {
