@@ -84,6 +84,22 @@ describe("groupConsecutiveSegments and calculateSlopes", () => {
     expect(slopes[0]).toMatchObject({ series: "A", fromVolume: 0, toVolume: 1, slope: 1 });
     expect(slopes[1]).toMatchObject({ series: "A", fromVolume: 1, toVolume: 2, slope: -1 });
   });
+
+  it("keeps separate runs of a series when another series is filtered out", () => {
+    const mixedRuns: ValidMeasurement[] = [
+      { series: "A", volume: 0, ph: 6, index: 0 },
+      { series: "A", volume: 1, ph: 7, index: 1 },
+      { series: "B", volume: 0, ph: 8, index: 2 },
+      { series: "A", volume: 2, ph: 7.5, index: 3 },
+      { series: "A", volume: 3, ph: 8, index: 4 }
+    ];
+    const allSegments = groupConsecutiveSegments(mixedRuns);
+    const visibleASegments = allSegments.filter(segment => segment.series === "A");
+    const slopes = calculateSlopes(visibleASegments);
+
+    expect(visibleASegments.map(segment => segment.points.length)).toEqual([2, 2]);
+    expect(slopes.map(slope => [slope.fromVolume, slope.toVolume])).toEqual([[0, 1], [2, 3]]);
+  });
 });
 
 describe("createAxisTicks", () => {
