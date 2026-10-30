@@ -1227,6 +1227,11 @@ import "./pwa";
             openProject: async function (project) {
               applyProjectToEditor(project);
             },
+            onProjectUpdated: async function (project) {
+              activeProject = cloneState(project);
+              activeProjectFingerprint = projectFingerprint(activeProject);
+              activeProjectNameEl.textContent = activeProject.name;
+            },
             onActiveProjectDeleted: async function () {
               resetEditorWithoutProject();
             }
