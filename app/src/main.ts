@@ -1184,11 +1184,16 @@ import "./pwa";
         scheduleHistoryCheckpoint();
         renderAll();
       });
+      seriesCreateForm.addEventListener("submit", createSeriesFromForm);
+      seriesColorsEl.addEventListener("click", handleSeriesManagerAction);
       seriesColorsEl.addEventListener("input", function (event) {
-        var input = event.target.closest("input[data-series-color]");
+        var input = event.target.closest("input[data-series-color-index]");
         if (!input) return;
+        var index = Number(input.getAttribute("data-series-color-index"));
+        var name = currentSeriesNames()[index];
+        if (name == null) return;
         scheduleHistoryCheckpoint();
-        seriesColors[input.getAttribute("data-series-color")] = input.value;
+        seriesColors[name] = input.value;
         renderAll();
       });
       if (typeof window.addEventListener === "function") {
@@ -1204,7 +1209,12 @@ import "./pwa";
         var index = Number(row && row.getAttribute("data-index"));
         if (!Number.isInteger(index) || !points[index]) return;
         scheduleHistoryCheckpoint();
-        points[index][input.getAttribute("data-field")] = input.value;
+        var field = input.getAttribute("data-field");
+        points[index][field] = input.value;
+        if (field === "series") {
+          registerSeriesName(input.value);
+          colorNamesSignature = "";
+        }
         renderAll();
       });
       rowsEl.addEventListener("click", function (event) {
