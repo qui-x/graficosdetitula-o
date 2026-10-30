@@ -149,6 +149,28 @@
   background: linear-gradient(145deg, #192c3e, #122233);
 }
 .project-card-main { min-width: 0; }
+.project-card.is-active {
+  border-color: #2d9bb8;
+  box-shadow: inset 3px 0 0 #2d9bb8, 0 8px 22px rgb(0 0 0 / .12);
+}
+.project-card-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem .65rem;
+  min-width: 0;
+}
+.project-card-active-label {
+  flex: 0 0 auto;
+  padding: .22rem .5rem;
+  border: 1px solid #286d7f;
+  border-radius: 999px;
+  background: #123b4b;
+  color: #a8e9f2;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
 .project-card-title {
   display: block;
   overflow-wrap: anywhere;
@@ -263,6 +285,13 @@
   color: #8e263d;
 }
 :root[data-theme="light"] .project-empty-state { border-color: #a9bccb; }
+:root[data-theme="light"] .project-card-active-label {
+  border-color: #8bbac7;
+  background: #e2f3f7;
+  color: #075b70;
+}
+:root[data-contrast="on"] .project-card.is-active { border-color: #ff0 !important; box-shadow: inset 3px 0 0 #ff0; }
+:root[data-contrast="on"] .project-card-active-label { background: #ff0 !important; color: #000 !important; }
 :root[data-contrast="on"] .project-manager-dialog { background: #000; color: #fff; border-color: #fff; }
 :root[data-contrast="on"] .project-manager-dialog * { color: #fff !important; border-color: #fff !important; }
 :root[data-contrast="on"] .project-manager-dialog button,
@@ -275,6 +304,17 @@
   .project-card-actions { justify-content: flex-start; }
 }
 @media (max-width: 620px) {
+  .active-project-control {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+    justify-content: space-between;
+  }
+  .active-project-label {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+  .project-switch-button { min-height: 44px; }
   .project-manager-dialog {
     width: calc(100vw - 12px);
     max-height: calc(100dvh - 12px);
@@ -289,7 +329,7 @@
   .project-manager-import, .project-manager-import button { width: 100%; }
   .project-card { padding: .7rem; }
   .project-card-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .project-card-actions button { min-width: 0; min-height: 42px; padding-inline: .3rem; font-size: .68rem; }
+  .project-card-actions button { min-width: 0; min-height: 44px; padding-inline: .3rem; font-size: .68rem; }
   .project-card-actions button[data-project-action="open"] { grid-column: 1 / -1; }
   .project-card-actions button[data-project-action="delete"] { grid-column: 1 / -1; }
   .active-project-label { max-width: min(40vw, 150px); }
