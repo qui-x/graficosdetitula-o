@@ -691,9 +691,16 @@ import "./pwa";
       function captureEditorState() {
         return {
           points: points.map(function (point) {
-            return { series: String(point.series || ""), volume: String(point.volume || ""), ph: String(point.ph || "") };
+            return {
+              id: String(point.id || createMeasurementId()),
+              series: String(point.series == null ? "" : point.series),
+              volume: String(point.volume == null ? "" : point.volume),
+              ph: String(point.ph == null ? "" : point.ph)
+            };
           }),
           currentView: currentView,
+          seriesCatalog: seriesCatalog.slice(),
+          hiddenSeries: Object.assign({}, hiddenSeries),
           seriesColors: Object.assign({}, seriesColors),
           settings: collectSettings()
         };
@@ -744,8 +751,16 @@ import "./pwa";
       }
       function applyEditorState(snapshot) {
         points = cloneState(snapshot.points || []);
+        ensureMeasurementIds(points);
         currentView = snapshot.currentView === "derivative" ? "derivative" : "curve";
+        seriesCatalog = Array.isArray(snapshot.seriesCatalog)
+          ? snapshot.seriesCatalog.filter(function (name) { return typeof name === "string" && name !== ""; })
+          : [];
+        hiddenSeries = Object.assign({}, snapshot.hiddenSeries || {});
         seriesColors = Object.assign({}, snapshot.seriesColors || {});
+        ensureSeriesCatalogue();
+        syncEntrySeriesOptions();
+        if (currentSeriesNames().indexOf(entrySeriesInput.value) === -1) entrySeriesInput.value = currentSeriesNames()[0] || "Série A";
         SETTINGS_IDS.forEach(function (id) {
           if (!Object.prototype.hasOwnProperty.call(snapshot.settings || {}, id)) return;
           var element = document.getElementById(id);
@@ -836,12 +851,15 @@ import "./pwa";
             schemaVersion: 1,
             points: points.map(function (point) {
               return {
+                id: String(point.id || createMeasurementId()),
                 series: String(point.series == null ? "" : point.series).slice(0, 60),
                 volume: String(point.volume == null ? "" : point.volume).slice(0, 80),
                 ph: String(point.ph == null ? "" : point.ph).slice(0, 80)
               };
             }),
             currentView: currentView,
+            seriesCatalog: seriesCatalog.slice(),
+            hiddenSeries: Object.assign({}, hiddenSeries),
             seriesColors: seriesColors,
             settings: collectSettings()
           };
@@ -868,21 +886,33 @@ import "./pwa";
               return point && typeof point === "object";
             }).slice(0, 2000).map(function (point) {
               return {
+                id: String(point.id || ""),
                 series: String(point.series == null ? "" : point.series).slice(0, 60),
                 volume: String(point.volume == null ? "" : point.volume).slice(0, 80),
                 ph: String(point.ph == null ? "" : point.ph).slice(0, 80)
               };
             });
             restoredPoints = restoredPoints.filter(function (point) {
-              var seriesName = String(point.series || "").trim();
+              var seriesName = String(point.series == null ? "" : point.series);
               // Remove as linhas vazias automáticas das versões anteriores; preserva rascunhos incompletos digitados.
               return nonEmpty(point) || (seriesName !== "" && seriesName !== "Série A");
             });
-            if (restoredPoints.length) {
-              points = restoredPoints;
-              entrySeriesInput.value = String(points[points.length - 1].series || "").trim() || "Série A";
-            }
+            if (restoredPoints.length) points = restoredPoints;
           }
+          ensureMeasurementIds(points);
+          seriesCatalog = Array.isArray(saved.seriesCatalog)
+            ? saved.seriesCatalog.filter(function (name) { return typeof name === "string" && name !== ""; }).slice(0, 200)
+            : [];
+          hiddenSeries = {};
+          if (saved.hiddenSeries && typeof saved.hiddenSeries === "object") {
+            Object.keys(saved.hiddenSeries).forEach(function (name) {
+              if (saved.hiddenSeries[name] === true) hiddenSeries[name] = true;
+            });
+          }
+          ensureSeriesCatalogue();
+          if (points.length) entrySeriesInput.value = effectiveSeriesName(points[points.length - 1].series);
+          else if (currentSeriesNames().indexOf(entrySeriesInput.value) === -1) entrySeriesInput.value = currentSeriesNames()[0];
+          syncEntrySeriesOptions();
           if (saved.currentView === "curve" || saved.currentView === "derivative") currentView = saved.currentView;
           if (saved.settings && typeof saved.settings === "object") {
             SETTINGS_IDS.forEach(function (id) {
