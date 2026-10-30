@@ -127,7 +127,7 @@
         <div class="panel-head">
           <span class="panel-title-copy">
             <span class="panel-summary-title" id="dados-heading">Leituras experimentais</span>
-            <span class="hint">Registre e organize cada medição na tabela.</span>
+            <span class="hint">Importe, registre e corrija as medições; organize as séries nesta etapa.</span>
           </span>
         </div>
         <div class="data-toolbar" aria-label="Ações dos dados">
@@ -206,9 +206,10 @@
           </div>
         </div>
         <details class="section-disclosure series-manager" id="series-colors-details" data-persist-open>
-          <summary>Gerenciar séries <span class="menu-caret" aria-hidden="true"></span></summary>
+          <summary>Séries e amostras <span class="menu-caret" aria-hidden="true"></span></summary>
           <div class="series-manager-intro">
-            Cada nome identifica uma série. Maiúsculas, minúsculas e espaços são considerados; nomes diferentes permanecem separados.
+            Crie, renomeie, duplique ou exclua séries e ajuste suas cores. A visibilidade no gráfico é controlada na etapa Gráfico.
+            Maiúsculas, minúsculas e espaços identificam nomes diferentes.
           </div>
           <form class="series-create-form" id="series-create-form" novalidate>
             <label class="series-create-field" for="new-series-name">
@@ -224,6 +225,14 @@
         </details>
         <p class="data-note" id="data-precision-note">Volume não pode ser negativo e o pH deve estar entre 0 e 14. Use vírgula ou ponto decimal; a análise aceita milésimos (0,001). Leituras incompletas ou fora desses limites não são plotadas.</p>
         <p id="validation" class="validation" data-state="empty" role="status" aria-live="polite">Preencha volume e pH para inserir pontos no gráfico.</p>
+        <div class="workflow-advance">
+          <div class="workflow-advance-copy">
+            <span class="workflow-step-kicker">Próxima etapa</span>
+            <strong>Visualize e analise os dados</strong>
+            <p>Depois de registrar as leituras, escolha o gráfico e revise sua apresentação.</p>
+          </div>
+          <button type="button" class="primary" data-workspace-destination="graph">Ir para Gráfico <span aria-hidden="true">→</span></button>
+        </div>
       </section>
         </div>
         <div class="workspace-step-view" id="workspace-graph" data-workspace-section="graph" role="tabpanel" aria-labelledby="step-graph" tabindex="0" hidden>
@@ -240,6 +249,18 @@
             <button type="button" role="tab" id="tab-derivative" data-view="derivative" aria-selected="false" aria-controls="chart-host">ΔpH/ΔV</button>
           </div>
         </div>
+        <section class="series-visibility-panel" aria-labelledby="series-visibility-heading">
+          <div class="series-visibility-heading">
+            <div>
+              <h3 id="series-visibility-heading">Exibição das séries</h3>
+              <p>Mostre ou oculte cada série sem remover nenhuma leitura da investigação.</p>
+            </div>
+          </div>
+          <div id="series-visibility-controls" class="series-visibility-list" role="group" aria-label="Controlar séries exibidas no gráfico">
+            <p class="hint">Adicione ou importe leituras na etapa Dados para exibir suas séries aqui.</p>
+          </div>
+          <p id="series-visibility-status" class="series-visibility-status" role="status" aria-live="polite"></p>
+        </section>
         <details class="customization" id="customization" data-persist-open>
           <summary>Personalizar gráficos</summary>
           <p class="customization-intro">Campos vazios usam escala automática. Intervalo mínimo: 0,001.</p>
@@ -321,6 +342,15 @@ Amostra B;1;6,9</code>
           </details>
         </div>
       </section>
+          <div class="workflow-advance workflow-advance-split">
+            <button type="button" class="secondary" data-workspace-destination="data">← Voltar para Dados</button>
+            <div class="workflow-advance-copy">
+              <span class="workflow-step-kicker">Próxima etapa</span>
+              <strong>Guardar ou compartilhar resultados</strong>
+              <p>Escolha o formato de arquivo adequado à sua necessidade.</p>
+            </div>
+            <button type="button" class="primary" data-workspace-destination="export">Ir para Exportar <span aria-hidden="true">→</span></button>
+          </div>
         </div>
         <div class="workspace-step-view" id="workspace-export" data-workspace-section="export" role="tabpanel" aria-labelledby="step-export" tabindex="0" hidden>
           <section class="panel export-panel" aria-labelledby="export-heading">
@@ -361,17 +391,18 @@ Amostra B;1;6,9</code>
                   <span class="export-card-meta">O JSON guarda ajustes e configurações das séries; as medições ficam no CSV.</span>
                 </article>
 
-                <article class="export-card project-export-card">
-                  <div class="export-card-icon" aria-hidden="true">{ JSON }</div>
-                  <h3>Projeto completo em JSON</h3>
-                  <p>Guarde as medições, as séries, as configurações e as preferências desta investigação em um único arquivo versionado.</p>
-                  <button type="button" id="export-project-json" class="primary">Exportar projeto</button>
-                  <span class="export-card-meta">Este arquivo permite recuperar a investigação completa em outro navegador.</span>
-                </article>
               </div>
-              <p class="export-note"><strong>Como preservar sua investigação:</strong> use <em>Projeto completo em JSON</em> para guardar medições, séries, configurações e preferências em um único arquivo. O CSV continua disponível para intercâmbio tabular das medições; o JSON de ajustes do gráfico é um formato separado e não substitui o arquivo de projeto.</p>
+              <p class="export-note"><strong>Para preservar a investigação completa:</strong> abra <em>Projetos</em> no cabeçalho e use <em>Exportar projeto atual</em>. O CSV contém as medições em formato tabular; o JSON desta etapa guarda somente os ajustes do gráfico.</p>
             </div>
           </section>
+          <div class="workflow-advance">
+            <div class="workflow-advance-copy">
+              <span class="workflow-step-kicker">Revisar o gráfico</span>
+              <strong>Precisa ajustar a visualização?</strong>
+              <p>Volte à etapa Gráfico para escolher outra representação ou corrigir escalas e rótulos.</p>
+            </div>
+            <button type="button" class="secondary" data-workspace-destination="graph">← Voltar para Gráfico</button>
+          </div>
         </div>
       </div>
     </div>
@@ -382,9 +413,12 @@ Amostra B;1;6,9</code>
           <div>
             <p class="project-manager-kicker">Gráficos de investigação</p>
             <h2 id="project-manager-title">Projetos de investigação</h2>
-            <p>Abra uma investigação existente ou crie uma nova. Cada projeto mantém seus próprios dados e ajustes neste dispositivo.</p>
+            <p>Crie, importe, abra e organize suas investigações. Cada projeto mantém seus próprios dados e ajustes neste dispositivo.</p>
           </div>
-          <button type="button" id="project-manager-close" class="project-manager-close" aria-label="Fechar gerenciador de projetos" disabled>×</button>
+          <div class="project-manager-header-actions">
+            <button type="button" id="export-project-json" class="project-manager-export-button" disabled>Exportar projeto atual</button>
+            <button type="button" id="project-manager-close" class="project-manager-close" aria-label="Fechar gerenciador de projetos" disabled>×</button>
+          </div>
         </header>
 
         <section class="project-manager-actions" aria-label="Criar ou importar projeto">

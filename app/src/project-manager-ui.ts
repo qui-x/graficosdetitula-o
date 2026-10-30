@@ -96,6 +96,7 @@ export class ProjectManagerUI {
       ? "Armazenamento principal: IndexedDB. Os projetos permanecem neste navegador e funcionam offline."
       : "IndexedDB não está disponível. Os projetos usam armazenamento local alternativo; exporte cópias JSON regularmente.";
     this.elements.closeButton.disabled = !this.callbacks.getActiveProject();
+    this.elements.exportButton.disabled = !this.callbacks.getActiveProject();
   }
 
   private bindEvents(): void {
@@ -145,6 +146,7 @@ export class ProjectManagerUI {
 
   private openDialog(): void {
     this.elements.closeButton.disabled = !this.callbacks.getActiveProject();
+    this.elements.exportButton.disabled = !this.callbacks.getActiveProject();
     if (this.elements.dialog.open) return;
     if (typeof this.elements.dialog.showModal === "function") this.elements.dialog.showModal();
     else this.elements.dialog.setAttribute("open", "");
@@ -255,6 +257,7 @@ export class ProjectManagerUI {
       this.elements.list.appendChild(card);
     });
     this.elements.closeButton.disabled = !this.callbacks.getActiveProject();
+    this.elements.exportButton.disabled = !this.callbacks.getActiveProject();
   }
 
   private async createProject(event: Event): Promise<void> {
