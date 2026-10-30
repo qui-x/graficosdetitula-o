@@ -5,6 +5,7 @@ import {
   createUuid,
   duplicateProjectDocument,
   exportProjectDocument,
+  uniqueProjectCopyName,
   importProjectDocument,
   projectWithName,
   uniqueImportedProjectName
@@ -14,6 +15,7 @@ export interface ProjectManagerCallbacks {
   getActiveProject(): ProjectDocument | null;
   saveActiveProject(): Promise<void>;
   openProject(project: ProjectDocument): Promise<void>;
+  onProjectUpdated(project: ProjectDocument): Promise<void>;
   onActiveProjectDeleted(): Promise<void>;
 }
 
@@ -178,15 +180,27 @@ export class ProjectManagerUI {
     projects.forEach(project => {
       const summary = cards.find(item => item.projectId === project.projectId);
       if (!summary) return;
+      const activeProject = this.callbacks.getActiveProject();
+      const isActive = activeProject?.projectId === project.projectId;
       const card = document.createElement("article");
-      card.className = "project-card";
+      card.className = "project-card" + (isActive ? " is-active" : "");
       card.dataset.projectId = project.projectId;
 
       const main = document.createElement("div");
       main.className = "project-card-main";
+      const titleRow = document.createElement("div");
+      titleRow.className = "project-card-title-row";
       const title = document.createElement("strong");
       title.className = "project-card-title";
       title.textContent = project.name;
+      titleRow.appendChild(title);
+      if (isActive) {
+        const activeLabel = document.createElement("span");
+        activeLabel.className = "project-card-active-label";
+        activeLabel.textContent = "Em edição";
+        activeLabel.setAttribute("aria-label", "Projeto atualmente aberto no editor");
+        titleRow.appendChild(activeLabel);
+      }
       const meta = document.createElement("div");
       meta.className = "project-card-meta";
       const updated = document.createElement("span");
@@ -196,7 +210,7 @@ export class ProjectManagerUI {
       const series = document.createElement("span");
       series.textContent = summary.seriesCount + (summary.seriesCount === 1 ? " série" : " séries");
       meta.append(updated, readings, series);
-      main.append(title, meta);
+      main.append(titleRow, meta);
 
       const actions = document.createElement("div");
       actions.className = "project-card-actions";
@@ -267,8 +281,7 @@ export class ProjectManagerUI {
       if (action === "duplicate") {
         const projects = await this.getAllProjects();
         const names = projects.map(item => item.name);
-        let copyName = uniqueImportedProjectName(project.name, names).replace(" (importado)", " (cópia)");
-        if (names.includes(copyName)) copyName = uniqueImportedProjectName(project.name + " (cópia)", names);
+        const copyName = uniqueProjectCopyName(project.name, names);
         const copy = duplicateProjectDocument(project, copyName);
         await this.repository.save(copy);
         await this.refresh();
@@ -276,7 +289,14 @@ export class ProjectManagerUI {
         return;
       }
       if (action === "export") {
-        downloadJson(safeFilename(project.name) + ".graficos-titulacao.json", exportProjectDocument(project));
+        let exportTarget = project;
+        if (this.callbacks.getActiveProject()?.projectId === projectId) {
+          await this.callbacks.saveActiveProject();
+          const refreshed = await this.repository.get(projectId);
+          if (!refreshed) throw new Error("O projeto ativo não foi encontrado após o salvamento.");
+          exportTarget = refreshed;
+        }
+        downloadJson(safeFilename(exportTarget.name) + ".graficos-titulacao.json", exportProjectDocument(exportTarget));
         this.feedback("Arquivo JSON do projeto preparado para exportação.", "success");
         return;
       }
@@ -285,6 +305,9 @@ export class ProjectManagerUI {
         if (proposed === null) return;
         const renamed = projectWithName(project, proposed);
         await this.repository.save(renamed);
+        if (this.callbacks.getActiveProject()?.projectId === projectId) {
+          await this.callbacks.onProjectUpdated(renamed);
+        }
         await this.refresh();
         this.feedback("Nome do projeto atualizado.", "success");
         return;
@@ -292,8 +315,10 @@ export class ProjectManagerUI {
       if (action === "delete") {
         const accepted = window.confirm("Excluir o projeto “" + project.name + "”? Esta ação remove os dados guardados neste dispositivo.");
         if (!accepted) return;
-        if (this.callbacks.getActiveProject()?.projectId === projectId) await this.callbacks.onActiveProjectDeleted();
         await this.repository.delete(projectId);
+        if (this.callbacks.getActiveProject()?.projectId === projectId) {
+          await this.callbacks.onActiveProjectDeleted();
+        }
         await this.refresh();
         this.feedback("Projeto excluído deste dispositivo.", "success");
       }
