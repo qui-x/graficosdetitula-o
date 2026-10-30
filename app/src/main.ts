@@ -367,7 +367,7 @@ import "./pwa";
             '</div>' +
             '<div class="series-manager-actions">' +
               '<button type="button" class="series-save-button" data-series-action="rename" data-series-index="' + index + '" aria-label="Salvar nome da série ' + escapeHTML(name) + '">Salvar</button>' +
-              '<button type="button" class="series-visibility-button" data-series-action="visibility" data-series-index="' + index + '" aria-pressed="' + (visible ? "true" : "false") + '" aria-label="' + visibilityLabel + ' série ' + escapeHTML(name) + '">' + (visible ? "Visível" : "Oculta") + '</button>' +
+              '<button type="button" class="series-visibility-button" data-series-action="visibility" data-series-index="' + index + '" aria-pressed="' + (visible ? "true" : "false") + '" aria-label="' + visibilityLabel + ' série ' + escapeHTML(name) + '">' + (visible ? "Ocultar" : "Mostrar") + '</button>' +
               '<details class="compact-action-menu series-actions-menu">' +
                 '<summary class="compact-action-menu-trigger" aria-label="Mais ações para série ' + escapeHTML(name) + '" title="Duplicar ou excluir série">Mais</summary>' +
                 '<div class="compact-action-menu-items">' +
