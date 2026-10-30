@@ -17,11 +17,14 @@ import "./pwa";
     (function () {
       var COLORS = ["#087eaa", "#c44555", "#26836d", "#7856b5", "#d17a17", "#3972c6", "#a43b87", "#617d32"];
       var points = [];
+      var seriesCatalog = ["Série A"];
+      var hiddenSeries = {};
       var currentView = "curve";
       var rowsEl = document.getElementById("point-rows");
       var tableEmptyStateEl = document.getElementById("table-empty-state");
       var entryForm = document.getElementById("measurement-entry-form");
       var entrySeriesInput = document.getElementById("entry-series");
+      var entrySeriesOptionsEl = document.getElementById("series-options");
       var entryVolumeInput = document.getElementById("entry-volume");
       var entryPhInput = document.getElementById("entry-ph");
       var entryStatusEl = document.getElementById("entry-status");
@@ -32,6 +35,9 @@ import "./pwa";
       var chartTitle = document.getElementById("chart-title");
       var chartExplanation = document.getElementById("chart-explanation");
       var seriesColorsEl = document.getElementById("series-colors");
+      var seriesCreateForm = document.getElementById("series-create-form");
+      var newSeriesNameInput = document.getElementById("new-series-name");
+      var seriesManagerFeedbackEl = document.getElementById("series-manager-feedback");
       var settingsStatusEl = document.getElementById("settings-status");
       var settingsWarnings = [];
       var seriesColors = {};
@@ -259,27 +265,90 @@ import "./pwa";
         var index = names.indexOf(seriesName);
         return COLORS[(index < 0 ? 0 : index) % COLORS.length];
       }
+      function effectiveSeriesName(value) {
+        var name = String(value == null ? "" : value);
+        return name === "" ? "Série A" : name;
+      }
+      function createMeasurementId() {
+        try {
+          if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+        } catch (error) {
+          // Usa o identificador local alternativo em navegadores sem randomUUID.
+        }
+        return "m-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
+      }
+      function ensureMeasurementIds(rows) {
+        var seen = Object.create(null);
+        rows.forEach(function (point) {
+          var id = String(point.id || "");
+          if (!id || seen[id]) id = createMeasurementId();
+          point.id = id;
+          seen[id] = true;
+        });
+      }
+      function registerSeriesName(name) {
+        var exactName = effectiveSeriesName(name);
+        if (seriesCatalog.indexOf(exactName) === -1) seriesCatalog.push(exactName);
+        return exactName;
+      }
+      function ensureSeriesCatalogue() {
+        points.forEach(function (point) { registerSeriesName(point.series); });
+        if (!seriesCatalog.length) seriesCatalog.push("Série A");
+      }
+      function isSeriesVisible(name) {
+        return hiddenSeries[name] !== true;
+      }
       function currentSeriesNames() {
-        var names = [];
+        var names = seriesCatalog.slice();
         points.forEach(function (point) {
-          var name = String(point.series || "").trim() || "Série A";
-          if (names.indexOf(name) < 0) names.push(name);
+          var name = effectiveSeriesName(point.series);
+          if (names.indexOf(name) === -1) names.push(name);
         });
         return names;
       }
+      function syncEntrySeriesOptions() {
+        var names = currentSeriesNames();
+        if (!entrySeriesOptionsEl) return;
+        entrySeriesOptionsEl.innerHTML = names.map(function (name) {
+          return '<option value="' + escapeHTML(name) + '"></option>';
+        }).join("");
+      }
       function syncSeriesColorControls() {
         var names = currentSeriesNames();
-        var signature = JSON.stringify(names);
+        var summary = names.map(function (name) {
+          var count = points.filter(function (point) { return effectiveSeriesName(point.series) === name; }).length;
+          return [name, count, isSeriesVisible(name)];
+        });
+        var signature = JSON.stringify(summary);
         if (signature === colorNamesSignature) return;
         colorNamesSignature = signature;
         if (!names.length) {
-          seriesColorsEl.innerHTML = '<p class="hint">As cores aparecerão quando os dados forem preenchidos.</p>';
+          seriesColorsEl.innerHTML = '<p class="hint">Crie uma série para começar a organizar as leituras.</p>';
           return;
         }
         seriesColorsEl.innerHTML = names.map(function (name, index) {
           var color = colorFor(name, names);
-          return '<div class="series-color-item"><label for="series-color-' + index + '">' + escapeHTML(name) + '</label><input type="color" id="series-color-' + index + '" data-series-color="' + escapeHTML(name) + '" value="' + color + '" aria-label="Cor da série ' + escapeHTML(name) + '"></div>';
+          var count = summary[index][1];
+          var visible = isSeriesVisible(name);
+          var visibilityLabel = visible ? "Ocultar no gráfico" : "Mostrar no gráfico";
+          return '<article class="series-manager-item">' +
+            '<div class="series-manager-fields">' +
+              '<label class="series-manager-name-field"><span>Nome exato</span><input type="text" maxlength="60" data-series-rename-index="' + index + '" value="' + escapeHTML(name) + '" aria-label="Nome exato da série ' + (index + 1) + '"></label>' +
+              '<label class="series-manager-color-field"><span>Cor</span><input type="color" id="series-color-' + index + '" data-series-color-index="' + index + '" value="' + color + '" aria-label="Cor da série ' + escapeHTML(name) + '"></label>' +
+              '<span class="series-manager-count">' + count + (count === 1 ? " leitura" : " leituras") + '</span>' +
+            '</div>' +
+            '<div class="series-manager-actions">' +
+              '<button type="button" data-series-action="rename" data-series-index="' + index + '">Salvar nome</button>' +
+              '<button type="button" data-series-action="duplicate" data-series-index="' + index + '">Duplicar leituras</button>' +
+              '<button type="button" data-series-action="visibility" data-series-index="' + index + '" aria-pressed="' + (visible ? "true" : "false") + '">' + visibilityLabel + '</button>' +
+            '</div>' +
+          '</article>';
         }).join("");
+      }
+      function setSeriesManagerFeedback(message, state) {
+        seriesManagerFeedbackEl.textContent = message || "";
+        if (state) seriesManagerFeedbackEl.dataset.state = state;
+        else seriesManagerFeedbackEl.removeAttribute("data-state");
       }
       function seriesNames(segments) {
         var names = [];
