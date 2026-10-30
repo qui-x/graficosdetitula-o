@@ -71,18 +71,7 @@ export interface ScientificSettings {
   repeatedVolumeDecisions: RepeatedVolumeDecision[];
 }
 
-export interface EditorChartControls {
-  currentView: "curve" | "derivative";
-  entrySeriesName: string;
-  /** Estado dos controles gráficos atuais; booleanos representam checkboxes e strings representam os demais campos. */
-  settings: Record<string, string | boolean>;
-}
-
 export interface VisualSettings {
-  /** Inclui séries vazias que ainda não têm medições. */
-  seriesCatalog?: string[];
-  /** Preserva controles específicos de cada gráfico sem reduzir sua precisão ou conteúdo. */
-  chartControls?: EditorChartControls;
   showGrid: boolean;
   showUncertaintyBars: boolean;
   showGuideLines: boolean;
