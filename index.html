@@ -11,8 +11,8 @@
   <meta name="description" content="Editor local e independente para inserir leituras manualmente e gerar gráficos de pH por volume e ΔpH/ΔV.">
   <title>Gráficos de investigação — editor manual</title>
   
-  <script type="module" crossorigin src="/graficosdetitula-o/assets/index-Ca2g8LqQ.js"></script>
-  <link rel="stylesheet" crossorigin href="/graficosdetitula-o/assets/index-BekaHxEh.css">
+  <script type="module" crossorigin src="/graficosdetitula-o/assets/index-vZsptIwN.js"></script>
+  <link rel="stylesheet" crossorigin href="/graficosdetitula-o/assets/index-ClXPUeqU.css">
 <link rel="manifest" href="/graficosdetitula-o/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/graficosdetitula-o/registerSW.js"></script>
 <meta name="theme-color" content="#101d2b">
 <link rel="icon" href="/graficosdetitula-o/favicon.ico" sizes="48x48">
@@ -45,6 +45,10 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <div class="active-project-control">
+          <span class="active-project-label" id="active-project-name">Nenhum projeto aberto</span>
+          <button type="button" id="open-project-manager" class="project-switch-button">Projetos</button>
+        </div>
         <span class="scope">Dados manuais · sem simulação</span>
         <button type="button" id="pwa-install-button" class="inline-flex items-center gap-2 rounded-xl border border-cyan-800 bg-cyan-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-cyan-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">Instalar app</button>
         <span id="pwa-status" class="visually-hidden" role="status" aria-live="polite"></span>
@@ -365,13 +369,61 @@ Amostra B;1;6,9</code>
                   <button type="button" id="print-chart">Preparar impressão</button>
                   <span class="export-card-meta">A página será preparada com o gráfico selecionado.</span>
                 </article>
+                <article class="export-card project-export-card">
+                  <div class="export-card-icon" aria-hidden="true">{ JSON }</div>
+                  <h3>Projeto completo em JSON</h3>
+                  <p>Guarde as medições, as séries, as configurações e as preferências desta investigação em um único arquivo versionado.</p>
+                  <button type="button" id="export-project-json" class="primary">Exportar projeto</button>
+                  <span class="export-card-meta">Este arquivo permite recuperar a investigação completa em outro navegador.</span>
+                </article>
               </div>
-              <p class="export-note"><strong>Importante:</strong> o exportador de projeto completo ainda não está disponível. O CSV preserva as medições; o JSON desta versão guarda ajustes do gráfico e configurações de séries, mas não os valores experimentais.</p>
+              <p class="export-note"><strong>Como preservar sua investigação:</strong> use <em>Projeto completo em JSON</em> para guardar medições, séries, configurações e preferências em um único arquivo. O CSV continua disponível para intercâmbio tabular das medições; o JSON de ajustes do gráfico é um formato separado e não substitui o arquivo de projeto.</p>
             </div>
           </section>
         </div>
       </div>
     </div>
+
+    <dialog class="project-manager-dialog" id="project-manager-dialog" aria-labelledby="project-manager-title">
+      <div class="project-manager-shell">
+        <header class="project-manager-header">
+          <div>
+            <p class="project-manager-kicker">Gráficos de investigação</p>
+            <h2 id="project-manager-title">Projetos de investigação</h2>
+            <p>Abra uma investigação existente ou crie uma nova. Cada projeto mantém seus próprios dados e ajustes neste dispositivo.</p>
+          </div>
+          <button type="button" id="project-manager-close" class="project-manager-close" aria-label="Fechar gerenciador de projetos" disabled>×</button>
+        </header>
+
+        <form class="project-create-form" id="project-create-form" novalidate>
+          <label for="new-project-name">
+            <span>Novo projeto</span>
+            <input id="new-project-name" type="text" maxlength="120" autocomplete="off" placeholder="Ex.: Titulação de amostra A" required>
+          </label>
+          <button type="submit" class="primary" id="create-project-button">＋ Criar projeto</button>
+        </form>
+
+        <div class="project-manager-toolbar">
+          <div class="project-manager-list-heading">
+            <strong>Projetos neste dispositivo</strong>
+            <span id="project-count">0 projetos</span>
+          </div>
+          <div class="project-manager-import">
+            <button type="button" id="import-project-button">Importar projeto JSON</button>
+            <input class="visually-hidden" type="file" id="project-import-file" accept=".json,application/json" tabindex="-1">
+          </div>
+        </div>
+        <p class="project-manager-feedback" id="project-manager-feedback" role="status" aria-live="polite"></p>
+        <p class="project-storage-note" id="project-storage-note" role="status" aria-live="polite">Os projetos são guardados localmente neste navegador.</p>
+
+        <div id="project-list" class="project-list" aria-label="Lista de projetos"></div>
+        <div id="project-empty-state" class="project-empty-state" hidden>
+          <span class="project-empty-icon" aria-hidden="true">＋</span>
+          <strong>Nenhum projeto cadastrado.</strong>
+          <p>Crie sua primeira investigação ou importe um arquivo JSON de projeto.</p>
+        </div>
+      </div>
+    </dialog>
 
     <div class="workspace-footer">
       <aside class="page-note"><strong>Nota:</strong> gráficos baseados nos dados informados; não simulam a titulação nem estimam leituras ausentes.</aside>
