@@ -321,7 +321,6 @@ import "./pwa";
         });
         seriesCatalog = uniqueNames;
         points.forEach(function (point) { registerSeriesName(point.series); });
-        if (!seriesCatalog.length) seriesCatalog.push("Série A");
       }
       function isSeriesVisible(name) {
         return hiddenSeries[name] !== true;
@@ -1006,13 +1005,18 @@ import "./pwa";
         } catch (error) {
           setDraftStatus("Falha ao salvar o projeto. Exporte um JSON para manter uma cópia.", "error");
           setProjectManagerFeedback(error instanceof Error ? error.message : "Não foi possível salvar o projeto.", "error");
+          throw error instanceof Error ? error : new Error("Não foi possível salvar o projeto.");
         }
       }
       function scheduleDraftSave() {
         if (!activeProject || projectPersistenceSuppressed) return;
         if (draftSaveTimer !== null) window.clearTimeout(draftSaveTimer);
         setDraftStatus("Salvando alterações…", "pending");
-        draftSaveTimer = window.setTimeout(function () { void persistDraft(); }, 350);
+        draftSaveTimer = window.setTimeout(function () {
+          void persistDraft().catch(function () {
+            // A falha permanece visível no estado do salvamento; nenhuma troca de projeto é autorizada.
+          });
+        }, 350);
       }
       function migrateLegacyDraftToProject() {
         var raw = null;
@@ -1610,13 +1614,17 @@ import "./pwa";
       projectPersistenceSuppressed = false;
       window.addEventListener("pagehide", function () {
         flushHistoryCheckpoint();
-        void persistDraft();
+        void persistDraft().catch(function () {
+          // O navegador pode encerrar a página; o estado de erro fica indicado para a próxima sessão.
+        });
       });
       window.addEventListener("blur", flushHistoryCheckpoint);
       document.addEventListener("visibilitychange", function () {
         if (document.visibilityState === "hidden") {
           flushHistoryCheckpoint();
-          void persistDraft();
+          void persistDraft().catch(function () {
+            // Mantém o erro no indicador e tenta novamente na próxima alteração ou exportação.
+          });
         }
       });
       void initializeProjectManager();
