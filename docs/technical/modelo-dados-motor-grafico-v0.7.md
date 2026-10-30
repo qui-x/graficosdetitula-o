@@ -74,6 +74,10 @@ O snapshot armazena as medições validadas em ordem original, as configuraçõe
 
 ## 6. Limites desta entrega
 
-`app/src/titration-engine.ts` é uma base matemática pura. Não está conectado ao `main.ts`, não salva no IndexedDB, não cria arquivos de exportação e não substitui o protótipo. A integração visual, o repositório IndexedDB, o codec JSON e os downloads reais são etapas posteriores.
+`app/src/titration-engine.ts` continua sendo uma base matemática pura e não está conectado ao `main.ts`. O editor ainda não chama `generateTitration()`, não aplica as incertezas instrumentais do motor e não atualiza `latestGeneration` após gerar um gráfico.
 
-O contrato TypeScript e o JSON Schema descrevem o formato esperado. A validação cruzada (IDs únicos, `min < max`, política única por série, revisões e snapshot coerentes) continua sendo responsabilidade da aplicação.
+O gerenciamento de projetos foi implementado em uma camada separada: IndexedDB guarda os documentos, localStorage é alternativa quando IndexedDB não está disponível, e o codec JSON versionado importa/exporta os dados e configurações do projeto. A interface atual também mantém CSV para intercâmbio tabular. Isso não significa que os cálculos do motor v0.7 tenham sido integrados.
+
+A persistência mantém o campo `latestGeneration` caso um documento já o possua, mas a interface ainda não cria snapshots científicos a partir do motor. A integração entre os dados do editor, o contrato científico, as revisões e a geração continua pendente.
+
+O contrato TypeScript e o JSON Schema descrevem o formato esperado. A validação cruzada (IDs únicos, `min < max`, política única por série, revisões e snapshot coerentes) é verificada pelo repositório de projetos para os campos implementados; a validação das regras matemáticas e sua ligação com o editor ainda exigem integração e testes adicionais.
