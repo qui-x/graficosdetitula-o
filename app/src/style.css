@@ -765,7 +765,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
     }
     .measurement-entry-fields {
       display: grid; grid-template-columns: minmax(180px,1.2fr) minmax(135px,.8fr) minmax(115px,.7fr) auto;
-      align-items: end; gap: .7rem;
+      align-items: start; gap: .7rem;
     }
     .measurement-field { display: flex; flex-direction: column; gap: .32rem; min-width: 0; }
     .measurement-field > span { color: var(--muted); font-size: .77rem; font-weight: 700; }
@@ -777,7 +777,13 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
     .measurement-field input:focus { border-color: var(--accent); background: #102538; }
     .measurement-field input[aria-invalid="true"] { border-color: #ff8a8a; background: #301b25; }
     .measurement-field small { color: var(--muted); font-size: .68rem; line-height: 1.35; }
-    #add-point { min-height: 46px; white-space: nowrap; padding-inline: .95rem; }
+    #add-point {
+      min-height: 46px;
+      align-self: start;
+      margin-top: 1.48rem;
+      white-space: nowrap;
+      padding-inline: .95rem;
+    }
     .measurement-entry-status {
       min-height: 1.2rem; margin: .55rem 0 0; color: var(--muted); font-size: .76rem;
     }
@@ -811,7 +817,12 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
     @media (max-width: 900px) {
       .measurement-entry-fields { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
       .measurement-field:first-child { grid-column: 1 / -1; }
-      #add-point { grid-column: 1 / -1; width: 100%; }
+      #add-point {
+        grid-column: 1 / -1;
+        width: 100%;
+        align-self: stretch;
+        margin-top: 0;
+      }
     }
     @media (max-width: 560px) {
       .measurement-entry { margin: 0 .7rem .8rem; padding: .8rem .75rem .65rem; }
@@ -862,7 +873,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
     }
     .series-manager-fields {
       display: grid; grid-template-columns: minmax(160px,1fr) 72px auto;
-      align-items: end; gap: .65rem;
+      align-items: start; gap: .65rem;
     }
     .series-manager-name-field, .series-manager-color-field { display: flex; flex-direction: column; gap: .28rem; min-width: 0; }
     .series-manager-name-field > span, .series-manager-color-field > span {
@@ -1095,7 +1106,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
       border-style: dashed;
       color: var(--muted);
     }
-    .series-actions-menu { margin-left: auto; }
+    .series-actions-menu { margin-left: 0; }
     .series-actions-menu .compact-action-menu-items { min-width: 180px; }
 
     /* Desfazer e refazer ocupam um único grupo visual. */
