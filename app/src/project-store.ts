@@ -654,3 +654,18 @@ export function uniqueImportedProjectName(name: string, existingNames: readonly 
   }
   return candidate;
 }
+
+export function uniqueProjectCopyName(name: string, existingNames: readonly string[]): string {
+  const baseName = String(name ?? "").trim().slice(0, 108) || "Projeto";
+  const initial = baseName + " (cópia)";
+  if (!existingNames.includes(initial)) return initial;
+  let suffixNumber = 2;
+  let suffix = " (cópia " + suffixNumber + ")";
+  let candidate = baseName.slice(0, 120 - suffix.length) + suffix;
+  while (existingNames.includes(candidate)) {
+    suffixNumber += 1;
+    suffix = " (cópia " + suffixNumber + ")";
+    candidate = baseName.slice(0, 120 - suffix.length) + suffix;
+  }
+  return candidate;
+}
