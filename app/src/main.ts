@@ -292,6 +292,11 @@ import "./pwa";
         return exactName;
       }
       function ensureSeriesCatalogue() {
+        var uniqueNames = [];
+        seriesCatalog.forEach(function (name) {
+          if (typeof name === "string" && name !== "" && uniqueNames.indexOf(name) === -1) uniqueNames.push(name);
+        });
+        seriesCatalog = uniqueNames;
         points.forEach(function (point) { registerSeriesName(point.series); });
         if (!seriesCatalog.length) seriesCatalog.push("Série A");
       }
@@ -1207,7 +1212,7 @@ import "./pwa";
         if (!window.confirm("Limpar todos os pontos digitados?")) return;
         recordUndoCheckpoint();
         points = [];
-        entrySeriesInput.value = "Série A";
+        entrySeriesInput.value = currentSeriesNames()[0] || "Série A";
         entryVolumeInput.value = "";
         entryPhInput.value = "";
         setEntryFeedback("", "");
