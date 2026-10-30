@@ -54,15 +54,16 @@ Valores decimais aceitam vírgula ou ponto. Leituras incompletas e valores fora 
 
 ## Organização da navegação
 
-O editor mantém três etapas de trabalho e um gerenciador de projetos separado:
+O editor mantém quatro etapas de trabalho e um gerenciador de projetos separado:
 
 1. **Dados:** importar CSV, adicionar ou corrigir medições na tabela e criar, renomear, duplicar ou excluir séries.
-2. **Gráfico:** alternar entre pH × volume e ΔpH/ΔV, controlar a visibilidade das séries e personalizar títulos, rótulos, escalas e apresentação.
-3. **Exportar:** baixar os dados em CSV, exportar o gráfico em SVG ou preparar a impressão/PDF e importar ou exportar os ajustes visuais em JSON.
+2. **Análise:** escolher entre pH × volume e ΔpH/ΔV e consultar o significado da representação.
+3. **Gráfico:** visualizar o resultado, controlar a visibilidade das séries e personalizar títulos, rótulos, escalas e apresentação.
+4. **Exportar:** baixar dados em CSV brasileiro ou internacional, exportar o gráfico em SVG ou preparar a impressão/PDF e importar ou exportar os ajustes visuais em JSON.
 
 **Projetos**, no cabeçalho, reúne as operações da investigação completa: criar, abrir, importar, duplicar, renomear, excluir e exportar o projeto atual em JSON. Assim, o arquivo completo não se confunde com o CSV de medições ou com o JSON restrito aos ajustes do gráfico.
 
-Os botões de continuidade no fim de cada etapa também permitem avançar ou voltar sem depender exclusivamente da navegação superior.
+Os botões de continuidade no fim das etapas também permitem avançar ou voltar sem depender exclusivamente da navegação superior. A representação selecionada na etapa Análise é lembrada no projeto.
 
 ## Navegação e atalhos
 
