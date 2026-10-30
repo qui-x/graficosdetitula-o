@@ -60,6 +60,7 @@ import "./pwa";
       var seriesColorsEl = document.getElementById("series-colors");
       var seriesVisibilityEl = document.getElementById("series-visibility-controls");
       var seriesVisibilityStatusEl = document.getElementById("series-visibility-status");
+      var analysisSelectionStatusEl = document.getElementById("analysis-selection-status");
       var seriesCreateForm = document.getElementById("series-create-form");
       var newSeriesNameInput = document.getElementById("new-series-name");
       var seriesManagerFeedbackEl = document.getElementById("series-manager-feedback");
@@ -92,7 +93,7 @@ import "./pwa";
       var PANEL_STORAGE_KEY = "graficos_investigacao_panels_v1";
       var PANEL_IDS = ["series-colors-details", "customization", "csv-import-help"];
       var WORKSPACE_VIEW_STORAGE_KEY = "graficos_investigacao_workspace_view_v1";
-      var WORKSPACE_VIEWS = ["data", "graph", "export"];
+      var WORKSPACE_VIEWS = ["data", "analysis", "graph", "export"];
 
       function applyWorkspaceView(view, persist, refresh) {
         if (WORKSPACE_VIEWS.indexOf(view) === -1) view = "data";
@@ -746,7 +747,19 @@ import "./pwa";
         chartTitle.textContent = config.title;
         chartExplanation.textContent = "ΔpH/ΔV é calculado entre leituras consecutivas. Valores negativos indicam queda do pH.";
       }
+      function syncAnalysisRepresentation() {
+        var label = currentView === "derivative" ? "ΔpH/ΔV" : "pH × volume";
+        document.querySelectorAll("[data-view]").forEach(function (button) {
+          var selected = button.getAttribute("data-view") === currentView;
+          button.setAttribute("aria-pressed", selected ? "true" : "false");
+          button.classList.toggle("is-active", selected);
+        });
+        if (analysisSelectionStatusEl) {
+          analysisSelectionStatusEl.textContent = "Representação selecionada: " + label + ". Ela será exibida na etapa Gráfico.";
+        }
+      }
       function renderAll() {
+        syncAnalysisRepresentation();
         ensureMeasurementIds(points);
         syncEntrySeriesOptions();
         syncSeriesVisibilityControls();
@@ -782,7 +795,9 @@ import "./pwa";
         document.getElementById("data-row-count").textContent = String(points.length);
         document.getElementById("data-valid-count").textContent = String(valid.length);
         var exportCsvButton = document.getElementById("export-csv");
+        var exportCsvInternationalButton = document.getElementById("export-csv-international");
         if (exportCsvButton) exportCsvButton.disabled = points.length === 0;
+        if (exportCsvInternationalButton) exportCsvInternationalButton.disabled = points.length === 0;
         document.getElementById("data-series-count").textContent = String(currentSeriesNames().length);
         var reviewCount = state.incomplete + state.invalid;
         document.getElementById("data-review-count").textContent = String(reviewCount);
@@ -911,9 +926,7 @@ import "./pwa";
           else element.value = String(value == null ? "" : value);
         });
         colorNamesSignature = "";
-        document.querySelectorAll("[data-view]").forEach(function (tab) {
-          tab.setAttribute("aria-selected", tab.getAttribute("data-view") === currentView ? "true" : "false");
-        });
+        syncAnalysisRepresentation();
         renderRows();
         renderAll();
         settleHistoryBaseline();
@@ -975,10 +988,16 @@ import "./pwa";
         });
       }
       function workspaceStageFromView(view) {
-        return view === "graph" ? "grafico" : view === "export" ? "exportacao" : "dados";
+        if (view === "analysis") return "analise";
+        if (view === "graph") return "grafico";
+        if (view === "export") return "exportacao";
+        return "dados";
       }
       function workspaceViewFromStage(stage) {
-        return stage === "grafico" ? "graph" : stage === "exportacao" ? "export" : "data";
+        if (stage === "analise") return "analysis";
+        if (stage === "grafico") return "graph";
+        if (stage === "exportacao") return "export";
+        return "data";
       }
       function currentAccessibilityPreferences() {
         var state = window.A11Y && (window.A11Y.state || window.A11Y.estado) || {};
@@ -1242,9 +1261,7 @@ import "./pwa";
           (points.length ? effectiveSeriesName(points[points.length - 1].series) : currentSeriesNames()[0] || "Série A");
         syncEntrySeriesOptions();
         colorNamesSignature = "";
-        document.querySelectorAll("[data-view]").forEach(function (tab) {
-          tab.setAttribute("aria-selected", tab.getAttribute("data-view") === currentView ? "true" : "false");
-        });
+        syncAnalysisRepresentation();
         restorePanelStates(activeProject);
         applyWorkspaceView(workspaceViewFromStage(activeProject.preferences.lastStage), false, false);
         renderRows();
@@ -1404,16 +1421,26 @@ import "./pwa";
         link.remove();
         setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
       }
-      function csvField(value) {
+      function csvField(value, delimiter) {
         var text = String(value == null ? "" : value);
-        return /[;"\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+        var mustQuote = text.indexOf(delimiter) >= 0 || /[;"\r\n]/.test(text);
+        return mustQuote ? '"' + text.replace(/"/g, '""') + '"' : text;
       }
-      function exportCSV() {
+      function csvDecimal(value, international) {
+        var text = String(value == null ? "" : value);
+        return international ? text.replace(",", ".") : text;
+      }
+      function exportCSV(format) {
+        var international = format === "international";
+        var delimiter = international ? "," : ";";
         var lines = [["Série", "Volume (mL)", "pH"]].concat(points.map(function (point) {
-          return [point.series, point.volume, point.ph];
+          return [point.series, csvDecimal(point.volume, international), csvDecimal(point.ph, international)];
         }));
-        var csv = "\uFEFF" + lines.map(function (line) { return line.map(csvField).join(";"); }).join("\r\n");
-        download("dados-graficos-investigacao.csv", "text/csv;charset=utf-8", csv);
+        var csv = "\uFEFF" + lines.map(function (line) {
+          return line.map(function (field) { return csvField(field, delimiter); }).join(delimiter);
+        }).join("\r\n");
+        var filename = international ? "dados-graficos-investigacao-internacional.csv" : "dados-graficos-investigacao-brasil.csv";
+        download(filename, "text/csv;charset=utf-8", csv);
       }
       function parseCSVLine(line, delimiter) {
         var fields = [], field = "", quoted = false;
@@ -1505,7 +1532,8 @@ import "./pwa";
         reader.onerror = function () { window.alert("Não foi possível ler o arquivo selecionado."); event.target.value = ""; };
         reader.readAsText(file, "UTF-8");
       });
-      document.getElementById("export-csv").addEventListener("click", exportCSV);
+      document.getElementById("export-csv").addEventListener("click", function () { exportCSV("brazil"); });
+      document.getElementById("export-csv-international").addEventListener("click", function () { exportCSV("international"); });
       document.getElementById("export-settings").addEventListener("click", function () {
         var settings = {};
         SETTINGS_IDS.forEach(function (id) {
@@ -1562,9 +1590,7 @@ import "./pwa";
             if (currentSeriesNames().indexOf(entrySeriesInput.value) === -1) entrySeriesInput.value = currentSeriesNames()[0];
             colorNamesSignature = "";
             if (parsed.currentView === "curve" || parsed.currentView === "derivative") currentView = parsed.currentView;
-            document.querySelectorAll("[data-view]").forEach(function (tab) {
-              tab.setAttribute("aria-selected", tab.getAttribute("data-view") === currentView ? "true" : "false");
-            });
+            syncAnalysisRepresentation();
             renderAll();
             settleHistoryBaseline();
           } catch (error) {
@@ -1627,9 +1653,7 @@ import "./pwa";
         button.addEventListener("click", function () {
           flushHistoryCheckpoint();
           currentView = button.getAttribute("data-view");
-          document.querySelectorAll("[data-view]").forEach(function (tab) {
-            tab.setAttribute("aria-selected", tab === button ? "true" : "false");
-          });
+          syncAnalysisRepresentation();
           renderAll();
           settleHistoryBaseline();
         });
