@@ -8,7 +8,22 @@ import {
   createAxisTicks as ticks
 } from "./graph-model";
 import { SnapshotHistory } from "./history";
+import { ProjectManagerUI } from "./project-manager-ui";
+import {
+  buildProjectListItems,
+  createEmptyProjectDocument,
+  createUuid,
+  duplicateProjectDocument,
+  exportProjectDocument,
+  importProjectDocument,
+  openProjectRepository,
+  projectWithName,
+  uniqueImportedProjectName,
+  validateProjectDocument
+} from "./project-store";
+import type { ProjectDocument, ProjectStage } from "./titration-contract";
 import "./style.css";
+import "./project-manager.css";
 import "./a11y";
 import "./pwa";
 
@@ -17,6 +32,13 @@ import "./pwa";
     (function () {
       var COLORS = ["#087eaa", "#c44555", "#26836d", "#7856b5", "#d17a17", "#3972c6", "#a43b87", "#617d32"];
       var points = [];
+      var activeProject = null;
+      var projectRepository = null;
+      var projectManagerController = null;
+      var projectStorageMode = "indexeddb";
+      var projectPersistenceSuppressed = false;
+      var activeProjectFingerprint = "";
+      var projectSaveInFlight = Promise.resolve();
       var seriesCatalog = ["Série A"];
       var hiddenSeries = {};
       var currentView = "curve";
@@ -39,6 +61,19 @@ import "./pwa";
       var newSeriesNameInput = document.getElementById("new-series-name");
       var seriesManagerFeedbackEl = document.getElementById("series-manager-feedback");
       var settingsStatusEl = document.getElementById("settings-status");
+      var projectManagerDialog = document.getElementById("project-manager-dialog");
+      var projectManagerCloseButton = document.getElementById("project-manager-close");
+      var projectCreateForm = document.getElementById("project-create-form");
+      var newProjectNameInput = document.getElementById("new-project-name");
+      var projectManagerFeedbackEl = document.getElementById("project-manager-feedback");
+      var projectStorageNoteEl = document.getElementById("project-storage-note");
+      var projectListEl = document.getElementById("project-list");
+      var projectCountEl = document.getElementById("project-count");
+      var projectEmptyStateEl = document.getElementById("project-empty-state");
+      var projectImportFileInput = document.getElementById("project-import-file");
+      var activeProjectNameEl = document.getElementById("active-project-name");
+      var openProjectManagerButton = document.getElementById("open-project-manager");
+      var exportProjectJsonButton = document.getElementById("export-project-json");
       var settingsWarnings = [];
       var seriesColors = {};
       var colorNamesSignature = "";
@@ -67,9 +102,9 @@ import "./pwa";
         document.querySelectorAll("[data-workspace-section]").forEach(function (section) {
           section.hidden = section.getAttribute("data-workspace-section") !== view;
         });
-        if (persist) {
-          try { localStorage.setItem(WORKSPACE_VIEW_STORAGE_KEY, view); }
-          catch (error) { /* A navegação continua funcional sem persistência. */ }
+        if (persist && activeProject && !projectPersistenceSuppressed) {
+          activeProject.preferences.lastStage = workspaceStageFromView(view);
+          scheduleDraftSave();
         }
         if (refresh) {
           window.requestAnimationFrame(function () {
@@ -84,14 +119,7 @@ import "./pwa";
       }
 
       function restoreWorkspaceView() {
-        var savedView = "data";
-        try {
-          var saved = localStorage.getItem(WORKSPACE_VIEW_STORAGE_KEY);
-          if (WORKSPACE_VIEWS.indexOf(saved) !== -1) savedView = saved;
-        } catch (error) {
-          // Inicia na etapa de dados quando o armazenamento não está disponível.
-        }
-        applyWorkspaceView(savedView, false, false);
+        applyWorkspaceView("data", false, false);
       }
 
       function setupWorkspaceNavigation() {
@@ -270,12 +298,7 @@ import "./pwa";
         return name === "" ? "Série A" : name;
       }
       function createMeasurementId() {
-        try {
-          if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
-        } catch (error) {
-          // Usa o identificador local alternativo em navegadores sem randomUUID.
-        }
-        return "m-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
+        return createUuid();
       }
       function ensureMeasurementIds(rows) {
         var seen = Object.create(null);
@@ -704,6 +727,8 @@ import "./pwa";
 
       // Rascunho local: dados, cores e personalizações permanecem neste navegador.
       var DRAFT_KEY = "graficos_investigacao_draft_v1";
+      var PROJECT_MIGRATION_KEY = "graficos_investigacao_projects_migration_v1";
+      var LAST_PROJECT_KEY = "graficos_investigacao_last_project_v1";
       var draftSaveTimer = null;
       function collectSettings() {
         var values = {};
@@ -825,27 +850,19 @@ import "./pwa";
         if (draftStatusTextEl) draftStatusTextEl.textContent = message;
       }
       function savePanelStates() {
-        try {
-          var state = {};
-          PANEL_IDS.forEach(function (id) {
-            var panel = document.getElementById(id);
-            if (panel instanceof HTMLDetailsElement) state[id] = panel.open;
-          });
-          localStorage.setItem(PANEL_STORAGE_KEY, JSON.stringify(state));
-        } catch (error) {
-          // As áreas recolhíveis continuam funcionais sem armazenamento de preferências.
-        }
+        if (!activeProject || projectPersistenceSuppressed) return;
+        var seriesPanel = document.getElementById("series-colors-details");
+        var advancedPanel = document.getElementById("customization");
+        if (seriesPanel instanceof HTMLDetailsElement) activeProject.preferences.seriesPanelOpen = seriesPanel.open;
+        if (advancedPanel instanceof HTMLDetailsElement) activeProject.preferences.advancedPanelOpen = advancedPanel.open;
+        scheduleDraftSave();
       }
-      function restorePanelStates() {
-        try {
-          var saved = JSON.parse(localStorage.getItem(PANEL_STORAGE_KEY) || "{}");
-          PANEL_IDS.forEach(function (id) {
-            var panel = document.getElementById(id);
-            if (panel instanceof HTMLDetailsElement && typeof saved[id] === "boolean") panel.open = saved[id];
-          });
-        } catch (error) {
-          // Mantém os estados padrão declarados no HTML.
-        }
+      function restorePanelStates(project) {
+        if (!project) return;
+        var seriesPanel = document.getElementById("series-colors-details");
+        var advancedPanel = document.getElementById("customization");
+        if (seriesPanel instanceof HTMLDetailsElement) seriesPanel.open = project.preferences.seriesPanelOpen;
+        if (advancedPanel instanceof HTMLDetailsElement) advancedPanel.open = project.preferences.advancedPanelOpen;
       }
       function setupPanelDisclosures() {
         document.querySelectorAll("details[data-persist-open]").forEach(function (panel) {
@@ -870,102 +887,360 @@ import "./pwa";
           });
         });
       }
-      function persistDraft() {
+      function workspaceStageFromView(view) {
+        return view === "graph" ? "grafico" : view === "export" ? "exportacao" : "dados";
+      }
+      function workspaceViewFromStage(stage) {
+        return stage === "grafico" ? "graph" : stage === "exportacao" ? "export" : "data";
+      }
+      function currentAccessibilityPreferences() {
+        var state = window.A11Y && (window.A11Y.state || window.A11Y.estado) || {};
+        var colorMode = state.colorblind === "acromatopsia" ? "grayscale" : state.colorblind;
+        return {
+          theme: state.theme === "light" ? "light" : "dark",
+          highContrast: state.contrast === true,
+          fontScale: Math.max(0.8, Math.min(2, Number(state.fontScale) || 1)),
+          extraTextSpacing: state.spacing === true,
+          reducedMotion: state.motion === true,
+          colorVisionSimulation: ["none", "protanopia", "deuteranopia", "tritanopia", "grayscale"].indexOf(colorMode) >= 0 ? colorMode : "none",
+          vlibrasEnabled: state.libras === true
+        };
+      }
+      function projectFingerprint(project) {
+        var snapshot = cloneState(project);
+        snapshot.updatedAt = "";
+        return JSON.stringify(snapshot);
+      }
+      function captureProjectDocument() {
+        if (!activeProject) return null;
+        var candidate = cloneState(activeProject);
+        var measurements = points.map(function (point) {
+          return {
+            id: String(point.id || createMeasurementId()),
+            seriesName: effectiveSeriesName(point.series),
+            volumeInput: String(point.volume == null ? "" : point.volume).slice(0, 80),
+            phInput: String(point.ph == null ? "" : point.ph).slice(0, 80)
+          };
+        });
+        var dataChanged = JSON.stringify(measurements) !== JSON.stringify(activeProject.data.measurements);
+        candidate.data.measurements = measurements;
+        candidate.visualSettings.seriesCatalog = currentSeriesNames().slice(0, 200);
+        candidate.visualSettings.seriesColors = Object.assign({}, seriesColors);
+        candidate.visualSettings.hiddenSeries = Object.keys(hiddenSeries).filter(function (name) { return hiddenSeries[name] === true; });
+        candidate.visualSettings.displayDecimals = displayDigits();
+        candidate.visualSettings.chartControls = {
+          currentView: currentView,
+          entrySeriesName: String(entrySeriesInput.value == null ? "" : entrySeriesInput.value),
+          settings: collectSettings()
+        };
+        var viewPrefix = currentView === "curve" ? "curve" : "derivative";
+        candidate.visualSettings.showGrid = document.getElementById("cfg-" + viewPrefix + "-grid").checked;
+        candidate.visualSettings.chartTitle = String(document.getElementById("cfg-" + viewPrefix + "-title").value || "");
+        candidate.visualSettings.xAxisLabel = String(document.getElementById("cfg-" + viewPrefix + "-x-label").value || "");
+        candidate.visualSettings.yAxisLabel = String(document.getElementById("cfg-" + viewPrefix + "-y-label").value || "");
+        candidate.preferences.lastStage = workspaceStageFromView(
+          document.querySelector('[data-workspace-view][aria-selected="true"]')?.getAttribute("data-workspace-view") || "data"
+        );
+        var advancedPanel = document.getElementById("customization");
+        var seriesPanel = document.getElementById("series-colors-details");
+        if (advancedPanel instanceof HTMLDetailsElement) candidate.preferences.advancedPanelOpen = advancedPanel.open;
+        if (seriesPanel instanceof HTMLDetailsElement) candidate.preferences.seriesPanelOpen = seriesPanel.open;
+        candidate.preferences.accessibility = currentAccessibilityPreferences();
+        if (dataChanged) candidate.revisions.data = activeProject.revisions.data + 1;
+        candidate.updatedAt = activeProject.updatedAt;
+        return candidate;
+      }
+      function legacyBackupFromProject(project) {
+        return {
+          schemaVersion: 1,
+          projectId: project.projectId,
+          points: project.data.measurements.map(function (measurement) {
+            return {
+              id: measurement.id,
+              series: measurement.seriesName,
+              volume: measurement.volumeInput,
+              ph: measurement.phInput
+            };
+          }),
+          currentView: project.visualSettings.chartControls?.currentView || "curve",
+          seriesCatalog: project.visualSettings.seriesCatalog || [],
+          hiddenSeries: (project.visualSettings.hiddenSeries || []).reduce(function (result, name) {
+            result[name] = true;
+            return result;
+          }, {}),
+          seriesColors: project.visualSettings.seriesColors,
+          settings: project.visualSettings.chartControls?.settings || {}
+        };
+      }
+      async function persistDraft() {
         if (draftSaveTimer !== null) {
           window.clearTimeout(draftSaveTimer);
           draftSaveTimer = null;
         }
+        if (!activeProject || !projectRepository || projectPersistenceSuppressed) return;
+        var candidate = captureProjectDocument();
+        if (!candidate) return;
+        var fingerprint = projectFingerprint(candidate);
+        if (fingerprint === activeProjectFingerprint) {
+          var savedTime = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(activeProject.updatedAt));
+          setDraftStatus("Projeto salvo · " + savedTime, "saved");
+          return;
+        }
+        candidate.updatedAt = new Date().toISOString();
+        var operation = projectSaveInFlight.then(function () {
+          return projectRepository.save(candidate);
+        });
+        projectSaveInFlight = operation.catch(function () { return undefined; });
         try {
-          var payload = {
-            schemaVersion: 1,
-            points: points.map(function (point) {
-              return {
-                id: String(point.id || createMeasurementId()),
-                series: String(point.series == null ? "" : point.series).slice(0, 60),
-                volume: String(point.volume == null ? "" : point.volume).slice(0, 80),
-                ph: String(point.ph == null ? "" : point.ph).slice(0, 80)
-              };
-            }),
-            currentView: currentView,
-            seriesCatalog: seriesCatalog.slice(),
-            hiddenSeries: Object.assign({}, hiddenSeries),
-            seriesColors: seriesColors,
-            settings: collectSettings()
-          };
-          localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
-          var savedAt = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
-          setDraftStatus("Salvo neste dispositivo · " + savedAt, "saved");
+          await operation;
+          activeProject = candidate;
+          activeProjectFingerprint = projectFingerprint(activeProject);
+          try { localStorage.setItem(DRAFT_KEY, JSON.stringify(legacyBackupFromProject(activeProject))); } catch (error) {
+            // O projeto já foi confirmado no repositório; a cópia legada é apenas uma recuperação auxiliar.
+          }
+          try { localStorage.setItem(LAST_PROJECT_KEY, activeProject.projectId); } catch (error) {
+            // A lista de projetos não depende desta referência auxiliar.
+          }
+          var savedAt = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(activeProject.updatedAt));
+          setDraftStatus("Projeto salvo neste dispositivo · " + savedAt, "saved");
         } catch (error) {
-          setDraftStatus("Não foi possível salvar localmente", "error");
+          setDraftStatus("Falha ao salvar o projeto. Exporte um JSON para manter uma cópia.", "error");
+          setProjectManagerFeedback(error instanceof Error ? error.message : "Não foi possível salvar o projeto.", "error");
         }
       }
       function scheduleDraftSave() {
+        if (!activeProject || projectPersistenceSuppressed) return;
         if (draftSaveTimer !== null) window.clearTimeout(draftSaveTimer);
-        setDraftStatus("Alterações pendentes…", "pending");
-        draftSaveTimer = window.setTimeout(persistDraft, 250);
+        setDraftStatus("Salvando alterações…", "pending");
+        draftSaveTimer = window.setTimeout(function () { void persistDraft(); }, 350);
       }
-      function restoreDraft() {
-        try {
-          var raw = localStorage.getItem(DRAFT_KEY);
-          if (!raw) return;
-          var saved = JSON.parse(raw);
-          if (!saved || saved.schemaVersion !== 1) return;
-          if (Array.isArray(saved.points)) {
-            var restoredPoints = saved.points.filter(function (point) {
-              return point && typeof point === "object";
-            }).slice(0, 2000).map(function (point) {
-              return {
-                id: String(point.id || ""),
-                series: String(point.series == null ? "" : point.series).slice(0, 60),
-                volume: String(point.volume == null ? "" : point.volume).slice(0, 80),
-                ph: String(point.ph == null ? "" : point.ph).slice(0, 80)
-              };
-            });
-            restoredPoints = restoredPoints.filter(function (point) {
-              var seriesName = String(point.series == null ? "" : point.series);
-              // Remove as linhas vazias automáticas das versões anteriores; preserva rascunhos incompletos digitados.
-              return nonEmpty(point) || (seriesName !== "" && seriesName !== "Série A");
-            });
-            if (restoredPoints.length) points = restoredPoints;
-          }
-          ensureMeasurementIds(points);
-          seriesCatalog = Array.isArray(saved.seriesCatalog)
-            ? saved.seriesCatalog.filter(function (name) { return typeof name === "string" && name !== ""; }).slice(0, 200)
-            : [];
-          hiddenSeries = {};
-          if (saved.hiddenSeries && typeof saved.hiddenSeries === "object") {
-            Object.keys(saved.hiddenSeries).forEach(function (name) {
-              if (saved.hiddenSeries[name] === true) hiddenSeries[name] = true;
-            });
-          }
-          ensureSeriesCatalogue();
-          if (points.length) entrySeriesInput.value = effectiveSeriesName(points[points.length - 1].series);
-          else if (currentSeriesNames().indexOf(entrySeriesInput.value) === -1) entrySeriesInput.value = currentSeriesNames()[0];
-          syncEntrySeriesOptions();
-          if (saved.currentView === "curve" || saved.currentView === "derivative") currentView = saved.currentView;
-          if (saved.settings && typeof saved.settings === "object") {
-            SETTINGS_IDS.forEach(function (id) {
-              if (!Object.prototype.hasOwnProperty.call(saved.settings, id)) return;
-              var element = document.getElementById(id);
-              if (!element) return;
-              var value = saved.settings[id];
-              if (element.type === "checkbox") element.checked = value === true;
-              else element.value = String(value == null ? "" : value);
-            });
-          }
-          if (saved.seriesColors && typeof saved.seriesColors === "object") {
-            seriesColors = {};
-            Object.keys(saved.seriesColors).forEach(function (name) {
-              var color = String(saved.seriesColors[name] || "");
-              if (/^#[0-9a-f]{6}$/i.test(color)) seriesColors[name] = color;
-            });
-          }
-          colorNamesSignature = "";
-          document.querySelectorAll("[data-view]").forEach(function (tab) {
-            tab.setAttribute("aria-selected", tab.getAttribute("data-view") === currentView ? "true" : "false");
+      function migrateLegacyDraftToProject() {
+        var raw = null;
+        try { raw = localStorage.getItem(DRAFT_KEY); }
+        catch (error) { return null; }
+        if (!raw) return null;
+        var saved;
+        try { saved = JSON.parse(raw); }
+        catch (error) { throw new Error("O rascunho antigo existe, mas não contém JSON válido. Ele foi preservado; não foi feita uma migração parcial."); }
+        if (!saved || saved.schemaVersion !== 1) {
+          throw new Error("O rascunho antigo usa um formato desconhecido. Ele foi preservado para recuperação manual.");
+        }
+
+        var project = createEmptyProjectDocument("Rascunho recuperado");
+        var restoredRows = Array.isArray(saved.points) ? saved.points.slice(0, 20000) : [];
+        project.data.measurements = restoredRows.filter(function (point) {
+          if (!point || typeof point !== "object") return false;
+          var volume = String(point.volume == null ? "" : point.volume);
+          var ph = String(point.ph == null ? "" : point.ph);
+          var series = String(point.series == null ? "" : point.series);
+          return volume.trim() !== "" || ph.trim() !== "" || (series !== "" && series !== "Série A");
+        }).map(function (point) {
+          var seriesName = String(point.series == null ? "" : point.series).slice(0, 80);
+          if (!/\S/.test(seriesName)) seriesName = "Série A";
+          var id = String(point.id || "");
+          if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) id = createMeasurementId();
+          return {
+            id: id,
+            seriesName: seriesName,
+            volumeInput: String(point.volume == null ? "" : point.volume).slice(0, 80),
+            phInput: String(point.ph == null ? "" : point.ph).slice(0, 80)
+          };
+        });
+
+        var names = [];
+        if (Array.isArray(saved.seriesCatalog)) {
+          saved.seriesCatalog.forEach(function (name) {
+            if (typeof name === "string" && name.length > 0 && name.length <= 80 && /\S/.test(name) && names.indexOf(name) === -1) names.push(name);
           });
+        }
+        project.data.measurements.forEach(function (measurement) {
+          if (names.indexOf(measurement.seriesName) === -1) names.push(measurement.seriesName);
+        });
+        if (!names.length) names.push("Série A");
+        project.visualSettings.seriesCatalog = names;
+
+        if (saved.seriesColors && typeof saved.seriesColors === "object") {
+          Object.keys(saved.seriesColors).forEach(function (name) {
+            var color = String(saved.seriesColors[name] || "");
+            if (/^#[0-9a-f]{6}$/i.test(color) && /\S/.test(name) && name.length <= 80) {
+              project.visualSettings.seriesColors[name] = color;
+            }
+          });
+        }
+        if (saved.hiddenSeries && typeof saved.hiddenSeries === "object") {
+          project.visualSettings.hiddenSeries = Object.keys(saved.hiddenSeries).filter(function (name) {
+            return saved.hiddenSeries[name] === true && /\S/.test(name) && name.length <= 80;
+          });
+        }
+
+        var settings = {};
+        if (saved.settings && typeof saved.settings === "object") {
+          SETTINGS_IDS.forEach(function (id) {
+            if (!Object.prototype.hasOwnProperty.call(saved.settings, id)) return;
+            var value = saved.settings[id];
+            if (typeof value === "boolean" || typeof value === "string") settings[id] = value;
+          });
+        }
+        var currentGraph = saved.currentView === "derivative" ? "derivative" : "curve";
+        var entrySeriesName = project.data.measurements.length
+          ? project.data.measurements[project.data.measurements.length - 1].seriesName
+          : names[0];
+        project.visualSettings.chartControls = {
+          currentView: currentGraph,
+          entrySeriesName: entrySeriesName,
+          settings: settings
+        };
+        var prefix = currentGraph === "curve" ? "curve" : "derivative";
+        project.visualSettings.showGrid = settings["cfg-" + prefix + "-grid"] !== false;
+        project.visualSettings.chartTitle = String(settings["cfg-" + prefix + "-title"] || project.visualSettings.chartTitle);
+        project.visualSettings.xAxisLabel = String(settings["cfg-" + prefix + "-x-label"] || project.visualSettings.xAxisLabel);
+        project.visualSettings.yAxisLabel = String(settings["cfg-" + prefix + "-y-label"] || project.visualSettings.yAxisLabel);
+        var decimals = Number(settings["cfg-decimals"] || 3);
+        if ([3, 4, 5, 6].indexOf(decimals) !== -1) project.visualSettings.displayDecimals = decimals;
+
+        var savedWorkspace = null;
+        try { savedWorkspace = localStorage.getItem(WORKSPACE_VIEW_STORAGE_KEY); } catch (error) { /* keep default */ }
+        var oldView = WORKSPACE_VIEWS.indexOf(savedWorkspace) !== -1 ? savedWorkspace : "data";
+        project.preferences.lastStage = workspaceStageFromView(oldView);
+        try {
+          var panelState = JSON.parse(localStorage.getItem(PANEL_STORAGE_KEY) || "{}");
+          project.preferences.advancedPanelOpen = panelState.customization === true;
+          project.preferences.seriesPanelOpen = panelState["series-colors-details"] !== false;
         } catch (error) {
-          // Um rascunho corrompido não impede a abertura do editor.
+          // Preferências antigas inválidas não impedem a migração dos dados.
+        }
+        project.preferences.accessibility = currentAccessibilityPreferences();
+        project.revisions.data = project.data.measurements.length ? 1 : 0;
+
+        var validation = validateProjectDocument(project);
+        if (!validation.valid || !validation.project) {
+          throw new Error("O rascunho antigo não passou pela validação do projeto: " + validation.issues.join(" "));
+        }
+        return validation.project;
+      }
+      function applyProjectToEditor(project) {
+        projectPersistenceSuppressed = true;
+        activeProject = cloneState(project);
+        points = activeProject.data.measurements.map(function (measurement) {
+          return {
+            id: measurement.id,
+            series: measurement.seriesName,
+            volume: measurement.volumeInput,
+            ph: measurement.phInput
+          };
+        });
+        seriesCatalog = Array.isArray(activeProject.visualSettings.seriesCatalog)
+          ? activeProject.visualSettings.seriesCatalog.slice()
+          : [];
+        ensureSeriesCatalogue();
+        hiddenSeries = {};
+        (activeProject.visualSettings.hiddenSeries || []).forEach(function (name) { hiddenSeries[name] = true; });
+        seriesColors = Object.assign({}, activeProject.visualSettings.seriesColors || {});
+        currentView = activeProject.visualSettings.chartControls?.currentView === "derivative" ? "derivative" : "curve";
+        var chartSettings = activeProject.visualSettings.chartControls?.settings || {};
+        SETTINGS_IDS.forEach(function (id) {
+          if (!Object.prototype.hasOwnProperty.call(chartSettings, id)) return;
+          var element = document.getElementById(id);
+          if (!element) return;
+          var value = chartSettings[id];
+          if (element.type === "checkbox") element.checked = value === true;
+          else element.value = String(value == null ? "" : value);
+        });
+        entrySeriesInput.value = activeProject.visualSettings.chartControls?.entrySeriesName ||
+          (points.length ? effectiveSeriesName(points[points.length - 1].series) : currentSeriesNames()[0] || "Série A");
+        syncEntrySeriesOptions();
+        colorNamesSignature = "";
+        document.querySelectorAll("[data-view]").forEach(function (tab) {
+          tab.setAttribute("aria-selected", tab.getAttribute("data-view") === currentView ? "true" : "false");
+        });
+        restorePanelStates(activeProject);
+        applyWorkspaceView(workspaceViewFromStage(activeProject.preferences.lastStage), false, false);
+        renderRows();
+        renderAll();
+        settleHistoryBaseline();
+        activeProjectFingerprint = projectFingerprint(activeProject);
+        activeProjectNameEl.textContent = activeProject.name;
+        projectManagerCloseButton.disabled = false;
+        try { localStorage.setItem(LAST_PROJECT_KEY, activeProject.projectId); } catch (error) { /* optional pointer */ }
+        setDraftStatus("Projeto aberto · salvamento automático ativo", "saved");
+        projectPersistenceSuppressed = false;
+      }
+      function resetEditorWithoutProject() {
+        projectPersistenceSuppressed = true;
+        activeProject = null;
+        activeProjectFingerprint = "";
+        points = [];
+        seriesCatalog = ["Série A"];
+        hiddenSeries = {};
+        seriesColors = {};
+        colorNamesSignature = "";
+        currentView = "curve";
+        entrySeriesInput.value = "Série A";
+        entryVolumeInput.value = "";
+        entryPhInput.value = "";
+        syncEntrySeriesOptions();
+        applyWorkspaceView("data", false, false);
+        renderRows();
+        renderAll();
+        settleHistoryBaseline();
+        projectManagerCloseButton.disabled = true;
+        activeProjectNameEl.textContent = "Nenhum projeto aberto";
+        setDraftStatus("Selecione ou crie um projeto", "pending");
+        projectPersistenceSuppressed = false;
+        try { localStorage.removeItem(LAST_PROJECT_KEY); } catch (error) { /* optional pointer */ }
+      }
+      function setProjectManagerFeedback(message, state) {
+        projectManagerFeedbackEl.textContent = message || "";
+        if (state) projectManagerFeedbackEl.dataset.state = state;
+        else projectManagerFeedbackEl.removeAttribute("data-state");
+      }
+      async function initializeProjectManager() {
+        try {
+          var opened = await openProjectRepository();
+          projectRepository = opened.repository;
+          projectStorageMode = opened.mode;
+          projectStorageNoteEl.textContent = opened.warning || (
+            opened.mode === "indexeddb"
+              ? "Armazenamento principal: IndexedDB. Os projetos permanecem neste navegador e funcionam offline."
+              : "Os projetos usam armazenamento local alternativo neste navegador."
+          );
+          var existingProjects = await projectRepository.list();
+          var migrationDone = false;
+          try { migrationDone = localStorage.getItem(PROJECT_MIGRATION_KEY) === "done"; } catch (error) { /* migration still checks the draft */ }
+          if (!migrationDone && existingProjects.length === 0) {
+            var legacyProject = migrateLegacyDraftToProject();
+            if (legacyProject) {
+              await projectRepository.save(legacyProject);
+              setProjectManagerFeedback("O rascunho anterior foi recuperado como um projeto. O arquivo de recuperação original foi preservado.", "success");
+            }
+          }
+          try { localStorage.setItem(PROJECT_MIGRATION_KEY, "done"); } catch (error) {
+            // A presença dos projetos no repositório impede que a migração seja repetida em condições normais.
+          }
+
+          projectManagerController = new ProjectManagerUI(projectRepository, projectStorageMode, {
+            getActiveProject: function () { return activeProject; },
+            saveActiveProject: async function () {
+              flushHistoryCheckpoint();
+              await persistDraft();
+            },
+            openProject: async function (project) {
+              applyProjectToEditor(project);
+            },
+            onProjectUpdated: async function (project) {
+              activeProject = cloneState(project);
+              activeProjectFingerprint = projectFingerprint(activeProject);
+              activeProjectNameEl.textContent = activeProject.name;
+            },
+            onActiveProjectDeleted: async function () {
+              resetEditorWithoutProject();
+            }
+          });
+          await projectManagerController.initialize();
+        } catch (error) {
+          if (projectManagerDialog instanceof HTMLDialogElement && !projectManagerDialog.open) projectManagerDialog.showModal();
+          projectStorageNoteEl.textContent = "Não foi possível abrir o armazenamento de projetos.";
+          setProjectManagerFeedback(error instanceof Error ? error.message : "Erro ao iniciar o gerenciador de projetos.", "error");
         }
       }
       function setEntryFeedback(message, state, invalidInput) {
@@ -1209,13 +1484,20 @@ import "./pwa";
         reader.readAsText(file, "UTF-8");
       });
       document.getElementById("clear-data").addEventListener("click", function () {
-        if (!window.confirm("Limpar todos os pontos digitados?")) return;
+        if (!window.confirm("Limpar todas as medições e remover também o catálogo de séries, cores e visibilidade? Os ajustes dos gráficos serão mantidos.")) return;
         recordUndoCheckpoint();
         points = [];
-        entrySeriesInput.value = currentSeriesNames()[0] || "Série A";
+        seriesCatalog = [];
+        hiddenSeries = {};
+        seriesColors = {};
+        colorNamesSignature = "";
+        entrySeriesInput.value = "";
+        newSeriesNameInput.value = "";
         entryVolumeInput.value = "";
         entryPhInput.value = "";
         setEntryFeedback("", "");
+        setSeriesManagerFeedback("", "");
+        syncEntrySeriesOptions();
         renderRows();
         renderAll();
         settleHistoryBaseline();
@@ -1317,23 +1599,27 @@ import "./pwa";
       });
       setupWorkspaceNavigation();
       setupPanelDisclosures();
-      restorePanelStates();
       restoreWorkspaceView();
-      restoreDraft();
+      projectPersistenceSuppressed = true;
       ensureMeasurementIds(points);
       ensureSeriesCatalogue();
       syncEntrySeriesOptions();
       renderRows();
       renderAll();
       settleHistoryBaseline();
-      window.addEventListener("pagehide", persistDraft);
+      projectPersistenceSuppressed = false;
+      window.addEventListener("pagehide", function () {
+        flushHistoryCheckpoint();
+        void persistDraft();
+      });
       window.addEventListener("blur", flushHistoryCheckpoint);
       document.addEventListener("visibilitychange", function () {
         if (document.visibilityState === "hidden") {
           flushHistoryCheckpoint();
-          persistDraft();
+          void persistDraft();
         }
       });
+      void initializeProjectManager();
       window.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
           var closedAny = false;
@@ -1346,6 +1632,7 @@ import "./pwa";
           if (closedAny) event.stopPropagation();
           return;
         }
+        if (projectManagerDialog instanceof HTMLDialogElement && projectManagerDialog.open) return;
         var modifier = event.ctrlKey || event.metaKey;
         if (!modifier) return;
         var key = event.key.toLowerCase();
