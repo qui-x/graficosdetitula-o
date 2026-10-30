@@ -44,7 +44,67 @@ import "./pwa";
       var historyTimer = null;
       var committedSnapshot = null;
       var PANEL_STORAGE_KEY = "graficos_investigacao_panels_v1";
-      var PANEL_IDS = ["data-panel", "chart-panel", "series-colors-details", "customization", "csv-import-help"];
+      var PANEL_IDS = ["series-colors-details", "customization", "csv-import-help"];
+      var WORKSPACE_VIEW_STORAGE_KEY = "graficos_investigacao_workspace_view_v1";
+      var WORKSPACE_VIEWS = ["data", "graph", "export"];
+
+      function applyWorkspaceView(view, persist, refresh) {
+        if (WORKSPACE_VIEWS.indexOf(view) === -1) view = "data";
+        document.querySelectorAll("[data-workspace-view]").forEach(function (tab) {
+          var selected = tab.getAttribute("data-workspace-view") === view;
+          tab.setAttribute("aria-selected", selected ? "true" : "false");
+          tab.setAttribute("tabindex", selected ? "0" : "-1");
+          tab.classList.toggle("is-active", selected);
+        });
+        document.querySelectorAll("[data-workspace-section]").forEach(function (section) {
+          section.hidden = section.getAttribute("data-workspace-section") !== view;
+        });
+        if (persist) {
+          try { localStorage.setItem(WORKSPACE_VIEW_STORAGE_KEY, view); }
+          catch (error) { /* A navegação continua funcional sem persistência. */ }
+        }
+        if (refresh) {
+          window.requestAnimationFrame(function () {
+            updateChartDimensions();
+            renderAll();
+          });
+        }
+      }
+
+      function setWorkspaceView(view) {
+        applyWorkspaceView(view, true, true);
+      }
+
+      function restoreWorkspaceView() {
+        var savedView = "data";
+        try {
+          var saved = localStorage.getItem(WORKSPACE_VIEW_STORAGE_KEY);
+          if (WORKSPACE_VIEWS.indexOf(saved) !== -1) savedView = saved;
+        } catch (error) {
+          // Inicia na etapa de dados quando o armazenamento não está disponível.
+        }
+        applyWorkspaceView(savedView, false, false);
+      }
+
+      function setupWorkspaceNavigation() {
+        var tabs = Array.prototype.slice.call(document.querySelectorAll("[data-workspace-view]"));
+        tabs.forEach(function (tab, index) {
+          tab.addEventListener("click", function () {
+            setWorkspaceView(tab.getAttribute("data-workspace-view"));
+          });
+          tab.addEventListener("keydown", function (event) {
+            var nextIndex = index;
+            if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = (index + 1) % tabs.length;
+            else if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = (index - 1 + tabs.length) % tabs.length;
+            else if (event.key === "Home") nextIndex = 0;
+            else if (event.key === "End") nextIndex = tabs.length - 1;
+            else return;
+            event.preventDefault();
+            tabs[nextIndex].focus();
+            setWorkspaceView(tabs[nextIndex].getAttribute("data-workspace-view"));
+          });
+        });
+      }
       var SETTINGS_IDS = [
         "cfg-curve-title", "cfg-curve-x-label", "cfg-curve-y-label",
         "cfg-curve-x-min", "cfg-curve-x-max", "cfg-curve-x-step",
@@ -804,7 +864,12 @@ import "./pwa";
         renderAll();
         settleHistoryBaseline();
       });
-      document.getElementById("print-chart").addEventListener("click", function () { window.print(); });
+      document.getElementById("print-chart").addEventListener("click", function () {
+        setWorkspaceView("graph");
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () { window.print(); });
+        });
+      });
       downloadSvgButton.addEventListener("click", function () {
         var svg = chartHost.querySelector("svg");
         if (!svg) return;
@@ -866,8 +931,10 @@ import "./pwa";
         renderAll();
         settleHistoryBaseline();
       });
+      setupWorkspaceNavigation();
       setupPanelDisclosures();
       restorePanelStates();
+      restoreWorkspaceView();
       restoreDraft();
       renderRows();
       renderAll();
@@ -911,6 +978,7 @@ import "./pwa";
         }
         if (key === "enter" && !event.shiftKey) {
           event.preventDefault();
+          setWorkspaceView("data");
           addPoint();
           return;
         }
