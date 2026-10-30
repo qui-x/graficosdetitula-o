@@ -67,7 +67,7 @@ export function validateMeasurementRows(rows: readonly RawMeasurement[]): Measur
     }
 
     valid.push({
-      series: String(row.series ?? "").trim() || "Série A",
+      series: String(row.series ?? "") === "" ? "Série A" : String(row.series ?? ""),
       volume,
       ph,
       index
