@@ -627,7 +627,6 @@ import "./pwa";
       }
       function renderAll() {
         ensureMeasurementIds(points);
-        ensureSeriesCatalogue();
         syncEntrySeriesOptions();
         var state = getPointState();
         var valid = state.valid;
@@ -639,7 +638,10 @@ import "./pwa";
         var allValidHidden = valid.length > 0 && visibleValid.length === 0;
         settingsWarnings = [];
         updateChartDimensions();
-        syncSeriesColorControls();
+        var activeElement = document.activeElement;
+        var editingSeriesCell = activeElement && typeof activeElement.matches === "function" &&
+          activeElement.matches('#point-rows input[data-field="series"]');
+        if (!editingSeriesCell) syncSeriesColorControls();
         document.getElementById("stat-points").textContent = String(valid.length);
         if (valid.length) {
           var phValues = valid.map(function (point) { return point.ph; });
@@ -1281,10 +1283,13 @@ import "./pwa";
         scheduleHistoryCheckpoint();
         var field = input.getAttribute("data-field");
         points[index][field] = input.value;
-        if (field === "series") {
-          registerSeriesName(input.value);
-          colorNamesSignature = "";
-        }
+        renderAll();
+      });
+      rowsEl.addEventListener("focusout", function (event) {
+        var input = event.target.closest('input[data-field="series"]');
+        if (!input) return;
+        registerSeriesName(input.value);
+        colorNamesSignature = "";
         renderAll();
       });
       rowsEl.addEventListener("click", function (event) {
@@ -1303,6 +1308,9 @@ import "./pwa";
       restorePanelStates();
       restoreWorkspaceView();
       restoreDraft();
+      ensureMeasurementIds(points);
+      ensureSeriesCatalogue();
+      syncEntrySeriesOptions();
       renderRows();
       renderAll();
       settleHistoryBaseline();
