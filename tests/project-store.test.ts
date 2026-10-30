@@ -78,6 +78,19 @@ describe("project document contract and JSON codec", () => {
     expect(validateProjectDocument(project).valid).toBe(true);
   });
 
+  it("preserves an intentionally empty series catalogue after clearing all measurements", () => {
+    const project = sampleProject();
+    project.data.measurements = [];
+    project.visualSettings.seriesCatalog = [];
+    project.visualSettings.seriesColors = {};
+    project.visualSettings.hiddenSeries = [];
+    const validation = validateProjectDocument(project);
+    expect(validation.valid).toBe(true);
+    expect(validation.project?.visualSettings.seriesCatalog).toEqual([]);
+    expect(validation.project?.visualSettings.hiddenSeries).toEqual([]);
+    expect(validation.project?.visualSettings.seriesColors).toEqual({});
+  });
+
   it("round-trips literal series identities and chart controls through versioned JSON", () => {
     const project = sampleProject();
     const parsed = importProjectDocument(exportProjectDocument(project));
