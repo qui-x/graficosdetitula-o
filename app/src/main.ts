@@ -154,7 +154,7 @@ import "./pwa";
       function renderRows() {
         var names = currentSeriesNames();
         rowsEl.innerHTML = points.map(function (point, index) {
-          var seriesName = String(point.series || "").trim() || "Série A";
+          var seriesName = effectiveSeriesName(point.series);
           var color = colorFor(seriesName, names);
           var paddedIndex = String(index + 1).padStart(2, "0");
           return '<tr data-index="' + index + '">' +
@@ -349,6 +349,144 @@ import "./pwa";
         seriesManagerFeedbackEl.textContent = message || "";
         if (state) seriesManagerFeedbackEl.dataset.state = state;
         else seriesManagerFeedbackEl.removeAttribute("data-state");
+      }
+      function refreshSeriesManager(focusTarget) {
+        colorNamesSignature = "";
+        syncEntrySeriesOptions();
+        renderRows();
+        renderAll();
+        settleHistoryBaseline();
+        if (focusTarget && typeof focusTarget.focus === "function") focusTarget.focus();
+      }
+      function createSeriesFromForm(event) {
+        event.preventDefault();
+        var name = String(newSeriesNameInput.value == null ? "" : newSeriesNameInput.value);
+        if (name === "") {
+          setSeriesManagerFeedback("Digite um nome para criar a série.", "error");
+          newSeriesNameInput.focus();
+          return;
+        }
+        if (name.length > 60) {
+          setSeriesManagerFeedback("O nome da série pode ter até 60 caracteres.", "error");
+          newSeriesNameInput.focus();
+          return;
+        }
+        if (currentSeriesNames().indexOf(name) !== -1) {
+          setSeriesManagerFeedback("Já existe uma série com esse nome exato. Maiúsculas e espaços diferentes são aceitos como nomes distintos.", "error");
+          newSeriesNameInput.focus();
+          return;
+        }
+        recordUndoCheckpoint();
+        seriesCatalog.push(name);
+        delete hiddenSeries[name];
+        newSeriesNameInput.value = "";
+        entrySeriesInput.value = name;
+        refreshSeriesManager();
+        setSeriesManagerFeedback("Série criada. Ela está pronta para receber leituras.", "success");
+      }
+      function renameSeriesAt(index) {
+        var names = currentSeriesNames();
+        var oldName = names[index];
+        if (oldName == null) return;
+        var input = seriesColorsEl.querySelector('input[data-series-rename-index="' + index + '"]');
+        if (!input) return;
+        var newName = String(input.value == null ? "" : input.value);
+        if (newName === "") {
+          setSeriesManagerFeedback("O nome da série não pode ficar vazio.", "error");
+          input.focus();
+          return;
+        }
+        if (newName.length > 60) {
+          setSeriesManagerFeedback("O nome da série pode ter até 60 caracteres.", "error");
+          input.focus();
+          return;
+        }
+        if (newName !== oldName && names.indexOf(newName) !== -1) {
+          setSeriesManagerFeedback("Já existe uma série com esse nome exato. Escolha outro nome.", "error");
+          input.focus();
+          return;
+        }
+        if (newName === oldName) {
+          setSeriesManagerFeedback("O nome da série não foi alterado.", "info");
+          return;
+        }
+        recordUndoCheckpoint();
+        points.forEach(function (point) {
+          if (effectiveSeriesName(point.series) === oldName) point.series = newName;
+        });
+        var catalogIndex = seriesCatalog.indexOf(oldName);
+        if (catalogIndex >= 0) seriesCatalog[catalogIndex] = newName;
+        else seriesCatalog.push(newName);
+        if (Object.prototype.hasOwnProperty.call(seriesColors, oldName)) {
+          var existingColor = seriesColors[oldName];
+          delete seriesColors[oldName];
+          if (!Object.prototype.hasOwnProperty.call(seriesColors, newName)) seriesColors[newName] = existingColor;
+        }
+        if (Object.prototype.hasOwnProperty.call(hiddenSeries, oldName)) {
+          var wasHidden = hiddenSeries[oldName];
+          delete hiddenSeries[oldName];
+          if (wasHidden === true) hiddenSeries[newName] = true;
+        }
+        if (entrySeriesInput.value === oldName) entrySeriesInput.value = newName;
+        refreshSeriesManager();
+        setSeriesManagerFeedback("Série renomeada. Todas as leituras associadas foram atualizadas.", "success");
+      }
+      function duplicateSeriesAt(index) {
+        var names = currentSeriesNames();
+        var sourceName = names[index];
+        if (sourceName == null) return;
+        var copyName = sourceName + " (cópia)";
+        var suffix = 2;
+        while (names.indexOf(copyName) !== -1) {
+          copyName = sourceName + " (cópia " + suffix + ")";
+          suffix += 1;
+        }
+        recordUndoCheckpoint();
+        var sourcePoints = points.filter(function (point) {
+          return effectiveSeriesName(point.series) === sourceName;
+        });
+        var copiedPoints = sourcePoints.map(function (point) {
+          return {
+            id: createMeasurementId(),
+            series: copyName,
+            volume: String(point.volume == null ? "" : point.volume),
+            ph: String(point.ph == null ? "" : point.ph)
+          };
+        });
+        seriesCatalog.push(copyName);
+        hiddenSeries[copyName] = false;
+        points = points.concat(copiedPoints);
+        entrySeriesInput.value = copyName;
+        refreshSeriesManager();
+        setSeriesManagerFeedback(
+          sourcePoints.length
+            ? "Série duplicada com " + sourcePoints.length + (sourcePoints.length === 1 ? " leitura copiada." : " leituras copiadas.")
+            : "Série vazia duplicada. Ela está pronta para receber leituras.",
+          "success"
+        );
+      }
+      function toggleSeriesVisibilityAt(index) {
+        var names = currentSeriesNames();
+        var name = names[index];
+        if (name == null) return;
+        recordUndoCheckpoint();
+        if (isSeriesVisible(name)) hiddenSeries[name] = true;
+        else delete hiddenSeries[name];
+        refreshSeriesManager();
+        setSeriesManagerFeedback(
+          isSeriesVisible(name) ? "Série visível no gráfico." : "Série oculta no gráfico. As leituras continuam preservadas.",
+          "success"
+        );
+      }
+      function handleSeriesManagerAction(event) {
+        var button = event.target.closest("button[data-series-action]");
+        if (!button) return;
+        var index = Number(button.getAttribute("data-series-index"));
+        if (!Number.isInteger(index) || index < 0) return;
+        var action = button.getAttribute("data-series-action");
+        if (action === "rename") renameSeriesAt(index);
+        else if (action === "duplicate") duplicateSeriesAt(index);
+        else if (action === "visibility") toggleSeriesVisibilityAt(index);
       }
       function seriesNames(segments) {
         var names = [];
