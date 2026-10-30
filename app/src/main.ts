@@ -495,9 +495,10 @@ import "./pwa";
         });
         return names;
       }
-      function buildLegend(names) {
+      function buildLegend(names, colorNames) {
+        var paletteNames = colorNames || names;
         legendEl.innerHTML = names.map(function (name) {
-          return '<span class="legend-item"><span class="legend-swatch" style="background:' + colorFor(name, names) + '"></span><span>' + escapeHTML(name) + '</span></span>';
+          return '<span class="legend-item"><span class="legend-swatch" style="background:' + colorFor(name, paletteNames) + '"></span><span>' + escapeHTML(name) + '</span></span>';
         }).join("");
       }
       function svgStart(label) {
@@ -565,7 +566,7 @@ import "./pwa";
         svg += '</g></svg>';
         chartHost.innerHTML = svg;
         downloadSvgButton.disabled = false;
-        buildLegend(names);
+        buildLegend(names, colorNames);
         chartTitle.textContent = config.title;
         chartExplanation.textContent = "Pontos inseridos; a linha apenas conecta leituras. Pontos fora dos limites não aparecem.";
       }
@@ -606,8 +607,12 @@ import "./pwa";
         var names = [];
         slopes.forEach(function (point) { if (names.indexOf(point.series) < 0) names.push(point.series); });
         var colorNames = currentSeriesNames();
-        names.forEach(function (name) {
-          var seriesPoints = slopes.filter(function (point) { return point.series === name; });
+        var slopeSegments = segments.map(function (segment) {
+          return { series: segment.series, points: getSlopes([segment]) };
+        }).filter(function (segment) { return segment.points.length > 0; });
+        slopeSegments.forEach(function (segment) {
+          var name = segment.series;
+          var seriesPoints = segment.points;
           var color = colorFor(name, colorNames);
           if (config.lines && seriesPoints.length > 1) {
             svg += '<polyline points="' + seriesPoints.map(function (point) { return x(point.volume).toFixed(3) + "," + y(point.slope).toFixed(3); }).join(" ") + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
@@ -623,7 +628,7 @@ import "./pwa";
         svg += "</svg>";
         chartHost.innerHTML = svg;
         downloadSvgButton.disabled = false;
-        buildLegend(names);
+        buildLegend(names, colorNames);
         chartTitle.textContent = config.title;
         chartExplanation.textContent = "ΔpH/ΔV é calculado entre leituras consecutivas. Valores negativos indicam queda do pH.";
       }
