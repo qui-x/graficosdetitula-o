@@ -1165,4 +1165,57 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
       .compact-action-menu > summary::after { transition: none; }
     }
 
+
+    .series-visibility-panel { padding: .85rem 1.25rem .95rem; border-bottom: 1px solid var(--line); background: var(--panel-soft); }
+    .series-visibility-heading h3 { color: var(--text); font-size: .9rem; }
+    .series-visibility-heading p { margin: .2rem 0 .65rem; color: var(--muted); font-size: .78rem; }
+    .series-visibility-list { display: flex; flex-wrap: wrap; align-items: stretch; gap: .45rem; }
+    .series-visibility-toggle {
+      display: inline-flex; align-items: center; gap: .5rem; min-width: 0; min-height: 44px;
+      padding: .42rem .65rem; border: 1px solid var(--line); border-radius: 10px;
+      background: var(--panel); color: var(--text); text-align: left;
+    }
+    .series-visibility-toggle[aria-pressed="false"] { border-style: dashed; color: var(--muted); background: transparent; }
+    .series-visibility-dot { display: inline-block; width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; box-shadow: 0 0 0 2px #ffffff20; }
+    .series-visibility-name { min-width: 0; max-width: 24ch; overflow-wrap: anywhere; font-size: .8rem; font-weight: 700; }
+    .series-visibility-state { flex: 0 0 auto; padding: .12rem .38rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: .67rem; line-height: 1.35; }
+    .series-visibility-toggle[aria-pressed="true"] .series-visibility-state { border-color: #287b67; color: #8edbc1; }
+    .series-visibility-status { min-height: 1.15rem; margin: .45rem 0 0; color: var(--muted); font-size: .75rem; }
+    .workflow-advance {
+      display: flex; align-items: center; justify-content: space-between; gap: .9rem;
+      margin-top: .85rem; padding: .9rem 1rem; border: 1px solid var(--line);
+      border-radius: 12px; background: var(--panel-soft);
+    }
+    .workflow-advance-copy { display: grid; gap: .12rem; min-width: 0; }
+    .workflow-step-kicker { color: var(--accent); font-size: .66rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .workflow-advance-copy strong { color: var(--text); font-size: .88rem; line-height: 1.3; }
+    .workflow-advance-copy p { margin: 0; color: var(--muted); font-size: .76rem; line-height: 1.4; }
+    .workflow-advance > button { flex: 0 0 auto; min-height: 44px; white-space: nowrap; }
+    .workflow-advance .secondary { border-color: var(--line); background: var(--panel); color: var(--text); }
+    .workflow-advance-split { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; }
+    :root[data-theme="light"] .series-visibility-panel { background: #f5f8fb; }
+    :root[data-theme="light"] .series-visibility-toggle { background: #fff; color: #142a3e; }
+    :root[data-theme="light"] .series-visibility-toggle[aria-pressed="false"] { background: transparent; color: #536b80; }
+    :root[data-theme="light"] .series-visibility-toggle[aria-pressed="true"] .series-visibility-state { color: #17664f; }
+    :root[data-contrast="on"] .series-visibility-panel,
+    :root[data-contrast="on"] .series-visibility-toggle,
+    :root[data-contrast="on"] .workflow-advance { background: #000 !important; color: #fff !important; border-color: #fff !important; }
+    :root[data-contrast="on"] .series-visibility-state { color: #ff0 !important; border-color: #fff !important; }
+    @media (max-width: 760px) {
+      .workflow-advance { align-items: stretch; }
+      .workflow-advance-split { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+      .workflow-advance-split .workflow-advance-copy { grid-column: 1 / -1; grid-row: 1; }
+    }
+    @media (max-width: 560px) {
+      .series-visibility-panel { padding: .8rem .7rem; }
+      .series-visibility-list { display: grid; grid-template-columns: minmax(0,1fr); }
+      .series-visibility-toggle { width: 100%; justify-content: space-between; }
+      .series-visibility-name { max-width: none; overflow-wrap: anywhere; }
+      .workflow-advance { align-items: stretch; flex-direction: column; padding: .8rem; }
+      .workflow-advance > button { width: 100%; white-space: normal; }
+      .workflow-advance-split { display: flex; }
+      .workflow-advance-split .workflow-advance-copy { order: -1; }
+    }
+    @media print { .series-visibility-panel, .workflow-advance { display: none !important; } }
+
 }

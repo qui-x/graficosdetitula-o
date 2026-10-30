@@ -52,6 +52,18 @@ O princípio central é a transparência: **o gráfico representa os dados infor
 
 Valores decimais aceitam vírgula ou ponto. Leituras incompletas e valores fora do domínio são sinalizados e não entram no gráfico. Intervalos manuais dos eixos respeitam a resolução mínima de **0,001**; quando a escala produzir marcações demais, a ferramenta amplia o intervalo para preservar a legibilidade.
 
+## Organização da navegação
+
+O editor mantém três etapas de trabalho e um gerenciador de projetos separado:
+
+1. **Dados:** importar CSV, adicionar ou corrigir medições na tabela e criar, renomear, duplicar ou excluir séries.
+2. **Gráfico:** alternar entre pH × volume e ΔpH/ΔV, controlar a visibilidade das séries e personalizar títulos, rótulos, escalas e apresentação.
+3. **Exportar:** baixar os dados em CSV, exportar o gráfico em SVG ou preparar a impressão/PDF e importar ou exportar os ajustes visuais em JSON.
+
+**Projetos**, no cabeçalho, reúne as operações da investigação completa: criar, abrir, importar, duplicar, renomear, excluir e exportar o projeto atual em JSON. Assim, o arquivo completo não se confunde com o CSV de medições ou com o JSON restrito aos ajustes do gráfico.
+
+Os botões de continuidade no fim de cada etapa também permitem avançar ou voltar sem depender exclusivamente da navegação superior.
+
 ## Navegação e atalhos
 
 Os painéis **Dados** e **Gráficos** podem ser recolhidos para liberar espaço. A preferência de abertura das áreas é lembrada localmente neste navegador. Os menus de ações se fecham ao clicar fora deles ou pressionar `Esc`.

@@ -58,6 +58,8 @@ import "./pwa";
       var chartTitle = document.getElementById("chart-title");
       var chartExplanation = document.getElementById("chart-explanation");
       var seriesColorsEl = document.getElementById("series-colors");
+      var seriesVisibilityEl = document.getElementById("series-visibility-controls");
+      var seriesVisibilityStatusEl = document.getElementById("series-visibility-status");
       var seriesCreateForm = document.getElementById("series-create-form");
       var newSeriesNameInput = document.getElementById("new-series-name");
       var seriesManagerFeedbackEl = document.getElementById("series-manager-feedback");
@@ -139,6 +141,15 @@ import "./pwa";
             event.preventDefault();
             tabs[nextIndex].focus();
             setWorkspaceView(tabs[nextIndex].getAttribute("data-workspace-view"));
+          });
+        });
+        document.querySelectorAll("[data-workspace-destination]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            var destination = button.getAttribute("data-workspace-destination");
+            if (WORKSPACE_VIEWS.indexOf(destination) === -1) return;
+            setWorkspaceView(destination);
+            var targetTab = document.querySelector('[data-workspace-view="' + destination + '"]');
+            if (targetTab) targetTab.focus();
           });
         });
       }
@@ -345,7 +356,7 @@ import "./pwa";
         var names = currentSeriesNames();
         var summary = names.map(function (name) {
           var count = points.filter(function (point) { return effectiveSeriesName(point.series) === name; }).length;
-          return [name, count, isSeriesVisible(name)];
+          return [name, count];
         });
         var signature = JSON.stringify(summary);
         if (signature === colorNamesSignature) return;
@@ -357,8 +368,6 @@ import "./pwa";
         seriesColorsEl.innerHTML = names.map(function (name, index) {
           var color = colorFor(name, names);
           var count = summary[index][1];
-          var visible = isSeriesVisible(name);
-          var visibilityLabel = visible ? "Ocultar no gráfico" : "Mostrar no gráfico";
           return '<article class="series-manager-item">' +
             '<div class="series-manager-fields">' +
               '<label class="series-manager-name-field"><span>Nome exato</span><input type="text" maxlength="60" data-series-rename-index="' + index + '" value="' + escapeHTML(name) + '" aria-label="Nome exato da série ' + (index + 1) + '"><small class="series-manager-name-preview">Identificador literal: <code>' + escapeHTML(JSON.stringify(name)) + '</code></small></label>' +
@@ -367,7 +376,6 @@ import "./pwa";
             '</div>' +
             '<div class="series-manager-actions">' +
               '<button type="button" class="series-save-button" data-series-action="rename" data-series-index="' + index + '" aria-label="Salvar nome da série ' + escapeHTML(name) + '">Salvar</button>' +
-              '<button type="button" class="series-visibility-button" data-series-action="visibility" data-series-index="' + index + '" aria-pressed="' + (visible ? "true" : "false") + '" aria-label="' + visibilityLabel + ' série ' + escapeHTML(name) + '">' + (visible ? "Ocultar" : "Mostrar") + '</button>' +
               '<details class="compact-action-menu series-actions-menu">' +
                 '<summary class="compact-action-menu-trigger" aria-label="Mais ações para série ' + escapeHTML(name) + '" title="Duplicar ou excluir série">Mais</summary>' +
                 '<div class="compact-action-menu-items">' +
@@ -379,10 +387,30 @@ import "./pwa";
           '</article>';
         }).join("");
       }
+      function syncSeriesVisibilityControls() {
+        if (!seriesVisibilityEl) return;
+        var names = currentSeriesNames();
+        if (!names.length) {
+          seriesVisibilityEl.innerHTML = '<p class="hint">Adicione ou importe leituras na etapa Dados para exibir suas séries aqui.</p>';
+          return;
+        }
+        seriesVisibilityEl.innerHTML = names.map(function (name, index) {
+          var visible = isSeriesVisible(name);
+          var actionLabel = visible ? "Ocultar série" : "Mostrar série";
+          return '<button type="button" class="series-visibility-toggle" data-series-visibility-index="' + index + '" aria-pressed="' + (visible ? "true" : "false") + '" aria-label="' + actionLabel + ' ' + escapeHTML(name) + '" title="' + actionLabel + '">' +
+            '<span class="series-visibility-dot" style="background:' + colorFor(name, names) + '" aria-hidden="true"></span>' +
+            '<span class="series-visibility-name">' + escapeHTML(name) + '</span>' +
+            '<span class="series-visibility-state">' + (visible ? "Visível" : "Oculta") + '</span>' +
+          '</button>';
+        }).join("");
+      }
       function setSeriesManagerFeedback(message, state) {
         seriesManagerFeedbackEl.textContent = message || "";
         if (state) seriesManagerFeedbackEl.dataset.state = state;
         else seriesManagerFeedbackEl.removeAttribute("data-state");
+      }
+      function setSeriesVisibilityFeedback(message) {
+        if (seriesVisibilityStatusEl) seriesVisibilityStatusEl.textContent = message || "";
       }
       function refreshSeriesManager(focusTarget) {
         colorNamesSignature = "";
@@ -507,9 +535,12 @@ import "./pwa";
         if (isSeriesVisible(name)) hiddenSeries[name] = true;
         else delete hiddenSeries[name];
         refreshSeriesManager();
-        setSeriesManagerFeedback(
-          isSeriesVisible(name) ? "Série visível no gráfico." : "Série oculta no gráfico. As leituras continuam preservadas.",
-          "success"
+        var updatedToggle = seriesVisibilityEl && seriesVisibilityEl.querySelector('[data-series-visibility-index="' + index + '"]');
+        if (updatedToggle) updatedToggle.focus();
+        setSeriesVisibilityFeedback(
+          isSeriesVisible(name)
+            ? 'Série "' + name + '" visível no gráfico. As leituras permanecem preservadas.'
+            : 'Série "' + name + '" oculta no gráfico. As leituras permanecem preservadas.'
         );
       }
       function deleteSeriesAt(index) {
@@ -607,7 +638,7 @@ import "./pwa";
           emptyMessage(
             allValidHidden ? "Todas as séries estão ocultas" : "O gráfico aparecerá aqui",
             allValidHidden
-              ? "As leituras continuam salvas. Reative uma ou mais séries no painel Gerenciar séries para voltar a exibi-las."
+              ? "As leituras continuam salvas. Reative uma ou mais séries nos controles Exibição das séries desta etapa."
               : "Preencha volume e pH em pelo menos uma linha para mostrar os pontos informados."
           );
           chartTitle.textContent = config.title;
@@ -660,7 +691,7 @@ import "./pwa";
           emptyMessage(
             allValidHidden ? "Todas as séries estão ocultas" : "Ainda não há variações calculáveis",
             allValidHidden
-              ? "As leituras continuam salvas. Reative uma ou mais séries no painel Gerenciar séries para voltar a exibi-las."
+              ? "As leituras continuam salvas. Reative uma ou mais séries nos controles Exibição das séries desta etapa."
               : "Informe ao menos duas leituras válidas, na mesma sequência, com volumes diferentes. A ferramenta calcula ΔpH/ΔV entre pontos consecutivos."
           );
           chartTitle.textContent = config.title;
@@ -718,6 +749,7 @@ import "./pwa";
       function renderAll() {
         ensureMeasurementIds(points);
         syncEntrySeriesOptions();
+        syncSeriesVisibilityControls();
         var state = getPointState();
         var valid = state.valid;
         var allSegments = makeSegments(valid);
@@ -1612,6 +1644,13 @@ import "./pwa";
       });
       seriesCreateForm.addEventListener("submit", createSeriesFromForm);
       seriesColorsEl.addEventListener("click", handleSeriesManagerAction);
+      seriesVisibilityEl.addEventListener("click", function (event) {
+        var button = event.target.closest("button[data-series-visibility-index]");
+        if (!button) return;
+        var index = Number(button.getAttribute("data-series-visibility-index"));
+        if (!Number.isInteger(index) || index < 0) return;
+        toggleSeriesVisibilityAt(index);
+      });
       seriesColorsEl.addEventListener("input", function (event) {
         var input = event.target.closest("input[data-series-color-index]");
         if (!input) return;
