@@ -5,6 +5,7 @@ on:
     branches:
       - feat/layout-editor-claro
       - feat/gerenciamento-series
+      - feat/gerenciador-projetos-indexeddb
     paths:
       - "app/**"
       - "tests/**"
