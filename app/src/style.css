@@ -809,7 +809,7 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
     @media (max-width: 900px) {
       .measurement-entry-fields { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
       .measurement-field:first-child { grid-column: 1 / -1; }
-      #add-point { width: 100%; }
+      #add-point { grid-column: 1 / -1; width: 100%; }
     }
     @media (max-width: 560px) {
       .measurement-entry { margin: 0 .7rem .8rem; padding: .8rem .75rem .65rem; }
