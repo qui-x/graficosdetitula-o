@@ -31,7 +31,7 @@ Projetos (gerenciador independente)
 ├── Duplicar, renomear ou excluir projeto
 └── Exportar projeto atual em JSON
 
-Editor (três etapas)
+Editor (quatro etapas)
 ├── 1. Dados
 │   ├── Importar CSV
 │   ├── Adicionar leituras manualmente
@@ -40,13 +40,16 @@ Editor (três etapas)
 │       ├── Criar / renomear
 │       ├── Duplicar / excluir
 │       └── Ajustar cores
-├── 2. Gráfico
-│   ├── pH × volume / ΔpH/ΔV
+├── 2. Análise
+│   ├── Selecionar pH × volume
+│   └── Selecionar ΔpH/ΔV
+├── 3. Gráfico
+│   ├── Visualizar a representação selecionada
 │   ├── Exibição das séries (mostrar / ocultar)
 │   └── Personalização de escalas, títulos e rótulos
-└── 3. Exportar
+└── 4. Exportar
     ├── Gráfico SVG / impressão-PDF
-    ├── Leituras CSV
+    ├── Leituras CSV (Brasil ou internacional)
     └── Ajustes visuais JSON
 ```
 
@@ -54,9 +57,11 @@ Editor (três etapas)
 
 - **Projetos permanece fora das três etapas.** Criar, abrir, importar, renomear, duplicar, excluir e exportar um projeto são operações sobre a investigação inteira, não uma etapa analítica.
 - **Dados concentra entrada, tabela e estrutura de séries.** Uma série é uma entidade que organiza medições, recebe nome e cor e pode ser duplicada ou removida.
-- **Gráfico concentra visibilidade.** Ocultar uma série altera apenas a visualização; não apaga as leituras. Por isso, o controle aparece ao lado da análise e do gráfico.
+- **Análise concentra a escolha da representação.** pH × volume e ΔpH/ΔV são alternativas de leitura dos mesmos dados; a escolha não modifica as medições.
+- **Gráfico concentra a visualização.** O gráfico ocupa a primeira área de conteúdo; a legenda, a visibilidade das séries e a personalização ficam em áreas auxiliares.
+- **A visibilidade permanece separada do CRUD.** Ocultar uma série altera apenas a visualização; não apaga as leituras.
 - **Exportar concentra produtos derivados.** CSV, SVG, PDF e ajustes de apresentação são saídas específicas. O JSON completo fica no gerenciador de Projetos para evitar confusão com o JSON de ajustes.
-- **O fluxo principal permanece com três etapas.** Não foi criada uma quarta etapa para projetos, pois o gerenciador tem alcance global.
+- **O fluxo principal tem quatro etapas.** Projetos continua como gerenciador global, fora da sequência de trabalho.
 
 ## 3. Regras de consistência dos rótulos
 
@@ -90,9 +95,15 @@ O teste deve verificar se uma pessoa consegue localizar as ações sem receber i
 - A pessoa procura operações de projeto no botão **Projetos**, em vez de procurar a criação de uma investigação em Dados.
 - A pessoa distingue criar/duplicar/excluir uma série de ocultá-la temporariamente.
 - A pessoa entende que exportar ajustes não equivale a exportar o projeto completo.
-- A pessoa consegue avançar entre Dados, Gráfico e Exportar pela navegação superior e pelos botões de continuidade.
+- A pessoa consegue avançar entre Dados, Análise, Gráfico e Exportar pela navegação superior e pelos botões de continuidade.
+- A pessoa diferencia a escolha da representação analítica da personalização do gráfico.
+- A pessoa reconhece que o gráfico é a área visual dominante, enquanto os controles são auxiliares.
 - Em tela estreita, a navegação, os menus, o gerenciador de projetos e os controles de série permanecem utilizáveis por toque e teclado.
 
-## 5. Limite da evidência
+## 5. Compatibilidade dos projetos
+
+A inclusão da etapa Análise atualiza o contrato de projetos para schemaVersion 2. A importação de projetos no formato 1 migra o documento para o formato 2, preservando medições, configurações e a última etapa antiga (Dados, Gráfico ou Exportar). A preferência `lastStage` passa a aceitar também `analise`. Projetos antigos armazenados localmente são normalizados na leitura e salvos novamente no formato atual.
+
+## 6. Limite da evidência
 
 Este Card Sorting é uma observação exploratória da organização de uma pessoa com categorias pré-definidas. Ele orienta uma hipótese de arquitetura, não substitui testes com outras pessoas nem um Tree Testing independente. A próxima validação deve usar tarefas realistas e registrar se os rótulos e a hierarquia permitem encontrar cada ação sem orientação.

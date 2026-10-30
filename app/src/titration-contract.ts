@@ -4,9 +4,9 @@
  */
 
 export const TITRATION_PROJECT_FORMAT = "graficos-titulacao-project" as const;
-export const TITRATION_PROJECT_SCHEMA_VERSION = 1 as const;
+export const TITRATION_PROJECT_SCHEMA_VERSION = 2 as const;
 
-export type ProjectStage = "dados" | "grafico" | "exportacao";
+export type ProjectStage = "dados" | "analise" | "grafico" | "exportacao";
 export type CurveRepresentation = "pontos" | "segmentos" | "catmull-rom";
 export type SeriesComparisonMode = "sobreposicao" | "separados";
 export type UncertaintyInterpretation = "maximum-tolerance" | "standard-uncertainty";

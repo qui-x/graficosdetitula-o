@@ -78,6 +78,40 @@ describe("project document contract and JSON codec", () => {
     expect(validateProjectDocument(project).valid).toBe(true);
   });
 
+  it("persists the Analysis stage in a version 2 project", () => {
+    const project = sampleProject();
+    project.preferences.lastStage = "analise";
+    const parsed = importProjectDocument(exportProjectDocument(project));
+    expect(parsed.project.schemaVersion).toBe(2);
+    expect(parsed.project.preferences.lastStage).toBe("analise");
+  });
+
+  it("migrates a version 1 project while preserving its prior stage and measurements", () => {
+    const legacy = JSON.parse(JSON.stringify(sampleProject())) as Record<string, unknown>;
+    legacy.schemaVersion = 1;
+    legacy.preferences = {
+      ...(legacy.preferences as Record<string, unknown>),
+      lastStage: "grafico"
+    };
+    const result = importProjectDocument(JSON.stringify(legacy));
+    expect(result.project.schemaVersion).toBe(2);
+    expect(result.project.preferences.lastStage).toBe("grafico");
+    expect(result.project.data.measurements).toHaveLength(1);
+    expect(result.warnings.join(" ")).toContain("formato 1 para o formato 2");
+  });
+
+  it("migrates legacy projects in local storage when they are read", async () => {
+    const storage = new MemoryStorage();
+    const legacy = JSON.parse(JSON.stringify(sampleProject())) as Record<string, unknown>;
+    legacy.schemaVersion = 1;
+    storage.setItem("legacy-projects", JSON.stringify([legacy]));
+    const repository = new LocalStorageProjectRepository(storage as unknown as Storage, "legacy-projects");
+    const migrated = await repository.get("8cde0ed1-6b1b-4bca-8c79-6abfd7385010");
+    expect(migrated?.schemaVersion).toBe(2);
+    const stored = JSON.parse(storage.getItem("legacy-projects") || "[]") as Array<{ schemaVersion: number }>;
+    expect(stored[0]?.schemaVersion).toBe(2);
+  });
+
   it("round-trips literal series identities and chart controls through versioned JSON", () => {
     const project = sampleProject();
     const parsed = importProjectDocument(exportProjectDocument(project));
@@ -112,8 +146,8 @@ describe("project document contract and JSON codec", () => {
 
   it("rejects unsupported future project versions clearly", () => {
     const project = sampleProject();
-    const json = JSON.stringify({ ...project, schemaVersion: 2 });
-    expect(() => importProjectDocument(json)).toThrow(/Versão de projeto 2 não suportada/);
+    const json = JSON.stringify({ ...project, schemaVersion: 3 });
+    expect(() => importProjectDocument(json)).toThrow(/Versão de projeto 3 não suportada/);
   });
 
   it("generates valid UUIDs", () => {

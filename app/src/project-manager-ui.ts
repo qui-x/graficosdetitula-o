@@ -362,7 +362,8 @@ export class ProjectManagerUI {
     this.busy = true;
     try {
       const serialized = await file.text();
-      const imported = importProjectDocument(serialized).project;
+      const importResult = importProjectDocument(serialized);
+      const imported = importResult.project;
       const projects = await this.getAllProjects();
       const names = projects.map(project => project.name);
       const idConflict = projects.some(project => project.projectId === imported.projectId);
@@ -373,10 +374,11 @@ export class ProjectManagerUI {
       }
       await this.repository.save(imported);
       await this.refresh();
+      const importMessage = idConflict
+        ? "Projeto importado como uma nova cópia; o projeto existente não foi sobrescrito."
+        : "Projeto importado e adicionado à lista.";
       this.feedback(
-        idConflict
-          ? "Projeto importado como uma nova cópia; o projeto existente não foi sobrescrito."
-          : "Projeto importado e adicionado à lista.",
+        [importMessage].concat(importResult.warnings).join(" "),
         "success"
       );
     } catch (error) {
