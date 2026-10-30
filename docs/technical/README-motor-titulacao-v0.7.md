@@ -28,6 +28,10 @@ Esta entrega adiciona uma base isolada para o motor matemático do editor. A imp
 
 ## Limitações e estado de integração
 
-O motor ainda não está ligado à interface. IndexedDB, codec JSON de produção, interação gráfica, geração efetiva de PNG/PDF e integração do snapshot com o menu de exportação continuam fora do escopo desta base.
+O motor matemático ainda não está ligado à interface principal: o editor publicado continua usando o fluxo gráfico legado e não chama `generateTitration()` para produzir os gráficos.
+
+Em uma camada separada, o aplicativo agora possui gerenciador de projetos, repositório IndexedDB (com alternativa localStorage), migração do rascunho legado e codec JSON versionado. Essa camada persiste dados e configurações, mas ainda não gera nem atualiza `latestGeneration` com os resultados do motor. A integração do snapshot científico, das incertezas e das políticas de volumes repetidos permanece pendente.
+
+A exportação de projeto completo em JSON e a exportação tabular CSV estão disponíveis na camada atual. A geração de PNG e a integração do snapshot com a exportação continuam fora desta entrega.
 
 **Estado GitHub verificado em 29/10/2026:** a PR técnica #2 foi mesclada em `feat/editor-graficos-manual`; posteriormente, a PR #1 foi mesclada em `main`. A execução da workflow de build e publicação associada ao merge em `main` foi concluída com sucesso ([execução no GitHub Actions](https://github.com/qui-x/graficosdetitula-o/actions/runs/40984474654)). Isso confirma a presença do código e da documentação desta base em `main`, mas não significa que o motor esteja integrado à interface principal. O motor permanece como módulo separado e ainda não é importado pela aplicação principal.
