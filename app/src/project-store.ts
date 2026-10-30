@@ -202,7 +202,7 @@ export function validateProjectDocument(value: unknown): ProjectValidationResult
 
   if (value.format !== TITRATION_PROJECT_FORMAT) issues.push("O campo format não identifica um projeto deste editor.");
   if (value.schemaVersion !== TITRATION_PROJECT_SCHEMA_VERSION) {
-    issues.push("Versão do projeto não suportada. Esta versão do editor aceita schemaVersion 1.");
+    issues.push("Versão do projeto não suportada. Esta versão do editor aceita schemaVersion 2.");
   }
   if (!isUuid(value.projectId)) issues.push("projectId precisa ser um UUID válido.");
   if (!validText(value.name, 120, false)) issues.push("O nome do projeto deve conter texto e ter até 120 caracteres.");
@@ -291,7 +291,7 @@ export function validateProjectDocument(value: unknown): ProjectValidationResult
   } else {
     const preferences = value.preferences;
     if (
-      !["dados", "grafico", "exportacao"].includes(String(preferences.lastStage)) ||
+      !["dados", "analise", "grafico", "exportacao"].includes(String(preferences.lastStage)) ||
       typeof preferences.advancedPanelOpen !== "boolean" ||
       typeof preferences.seriesPanelOpen !== "boolean" ||
       !isAccessibilityPreferences(preferences.accessibility)
@@ -407,6 +407,25 @@ export function exportProjectDocument(project: ProjectDocument): string {
   return JSON.stringify(validation.project, null, 2);
 }
 
+function normalizeProjectDocument(value: unknown): ProjectImportResult {
+  if (!isRecord(value)) throw new Error("O conteúdo JSON precisa ser um objeto.");
+  let candidate: unknown = value;
+  const warnings: string[] = [];
+
+  if (value.schemaVersion === 1) {
+    candidate = { ...value, schemaVersion: TITRATION_PROJECT_SCHEMA_VERSION };
+    warnings.push("Este projeto foi atualizado do formato 1 para o formato 2. As medições e as configurações anteriores foram preservadas.");
+  } else if (value.schemaVersion !== TITRATION_PROJECT_SCHEMA_VERSION) {
+    throw new Error("Versão de projeto " + String(value.schemaVersion) + " não suportada por esta versão do editor.");
+  }
+
+  const validation = validateProjectDocument(candidate);
+  if (!validation.valid || !validation.project) {
+    throw new Error("O arquivo não é um projeto válido:\n" + validation.issues.map(issue => "• " + issue).join("\n"));
+  }
+  return { project: validation.project, warnings };
+}
+
 export function importProjectDocument(serialized: string): ProjectImportResult {
   let parsed: unknown;
   try {
@@ -414,15 +433,7 @@ export function importProjectDocument(serialized: string): ProjectImportResult {
   } catch {
     throw new Error("O arquivo não contém JSON válido.");
   }
-  if (isRecord(parsed) && parsed.schemaVersion !== undefined && parsed.schemaVersion !== TITRATION_PROJECT_SCHEMA_VERSION) {
-    const version = String(parsed.schemaVersion);
-    throw new Error("Versão de projeto " + version + " não suportada por esta versão do editor.");
-  }
-  const validation = validateProjectDocument(parsed);
-  if (!validation.valid || !validation.project) {
-    throw new Error("O arquivo não é um projeto válido:\n" + validation.issues.map(issue => "• " + issue).join("\n"));
-  }
-  return { project: validation.project, warnings: [] };
+  return normalizeProjectDocument(parsed);
 }
 
 function transactionResult<T>(transaction: IDBTransaction, request: IDBRequest<T>): Promise<T> {
@@ -519,8 +530,11 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     const database = await this.openDatabase();
     const transaction = database.transaction(PROJECT_STORE_NAME, "readonly");
     const request = transaction.objectStore(PROJECT_STORE_NAME).get(projectId);
-    const project = await transactionResult(transaction, request) as ProjectDocument | undefined;
-    return project ? clone(project) : null;
+    const stored = await transactionResult(transaction, request) as unknown;
+    if (!stored) return null;
+    const normalized = normalizeProjectDocument(stored);
+    if (normalized.warnings.length > 0) await this.save(normalized.project);
+    return normalized.project;
   }
 
   async save(project: ProjectDocument): Promise<void> {
@@ -551,12 +565,9 @@ export class LocalStorageProjectRepository implements ProjectRepository {
     if (!serialized) return [];
     const parsed: unknown = JSON.parse(serialized);
     if (!Array.isArray(parsed)) throw new Error("A lista local de projetos está corrompida.");
-    const projects: ProjectDocument[] = [];
-    for (const item of parsed) {
-      const validation = validateProjectDocument(item);
-      if (!validation.valid || !validation.project) throw new Error("Há um projeto inválido no armazenamento local.");
-      projects.push(validation.project);
-    }
+    const normalized = parsed.map(item => normalizeProjectDocument(item));
+    const projects = normalized.map(item => item.project);
+    if (normalized.some(item => item.warnings.length > 0)) this.writeAll(projects);
     return projects;
   }
 
