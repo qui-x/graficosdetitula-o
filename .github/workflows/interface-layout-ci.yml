@@ -6,6 +6,7 @@ on:
       - feat/layout-editor-claro
       - feat/gerenciamento-series
       - feat/gerenciador-projetos-indexeddb
+      - feat/gerenciador-projetos-ciclo-seguro
     paths:
       - "app/**"
       - "tests/**"
