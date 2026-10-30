@@ -8,6 +8,7 @@ import {
   createAxisTicks as ticks
 } from "./graph-model";
 import { SnapshotHistory } from "./history";
+import { removeSeriesFromState } from "./series-management";
 import { ProjectManagerUI } from "./project-manager-ui";
 import {
   buildProjectListItems,
@@ -368,6 +369,7 @@ import "./pwa";
               '<button type="button" data-series-action="rename" data-series-index="' + index + '">Salvar nome</button>' +
               '<button type="button" data-series-action="duplicate" data-series-index="' + index + '">Duplicar leituras</button>' +
               '<button type="button" data-series-action="visibility" data-series-index="' + index + '" aria-pressed="' + (visible ? "true" : "false") + '">' + visibilityLabel + '</button>' +
+              '<button type="button" class="series-delete-button" data-series-action="delete" data-series-index="' + index + '" aria-label="Excluir série ' + escapeHTML(name) + '" title="Excluir esta série e seus registros">Excluir série</button>' +
             '</div>' +
           '</article>';
         }).join("");
@@ -505,6 +507,54 @@ import "./pwa";
           "success"
         );
       }
+      function deleteSeriesAt(index) {
+        var names = currentSeriesNames();
+        var name = names[index];
+        if (name == null) return;
+
+        var associatedCount = points.filter(function (point) {
+          return effectiveSeriesName(point.series) === name;
+        }).length;
+        var confirmation = 'Excluir a série "' + name + '"?';
+        if (associatedCount > 0) {
+          confirmation += "\\n\\n" + associatedCount +
+            (associatedCount === 1 ? " registro associado será removido" : " registros associados serão removidos") +
+            " da tabela e dos gráficos.";
+        } else {
+          confirmation += "\\n\\nA série vazia será removida do catálogo.";
+        }
+        confirmation += "\\n\\nA cor e a visibilidade próprias da série também serão removidas. Será possível recuperar a operação com Desfazer.";
+
+        if (!window.confirm(confirmation)) return;
+
+        recordUndoCheckpoint();
+        var nextState = removeSeriesFromState({
+          points: points,
+          seriesCatalog: seriesCatalog,
+          seriesColors: seriesColors,
+          hiddenSeries: hiddenSeries
+        }, name);
+        points = nextState.points;
+        seriesCatalog = nextState.seriesCatalog;
+        seriesColors = nextState.seriesColors;
+        hiddenSeries = nextState.hiddenSeries;
+
+        if (effectiveSeriesName(entrySeriesInput.value) === name) {
+          var remainingNames = currentSeriesNames();
+          entrySeriesInput.value = remainingNames[0] || "";
+        }
+
+        colorNamesSignature = "";
+        refreshSeriesManager();
+        setSeriesManagerFeedback(
+          associatedCount > 0
+            ? 'Série "' + name + '" excluída com ' + associatedCount +
+              (associatedCount === 1 ? " registro removido." : " registros removidos.") +
+              " Use Desfazer para recuperar a série e suas leituras."
+            : 'Série vazia "' + name + '" excluída. Use Desfazer para recuperá-la.',
+          "success"
+        );
+      }
       function handleSeriesManagerAction(event) {
         var button = event.target.closest("button[data-series-action]");
         if (!button) return;
@@ -514,6 +564,7 @@ import "./pwa";
         if (action === "rename") renameSeriesAt(index);
         else if (action === "duplicate") duplicateSeriesAt(index);
         else if (action === "visibility") toggleSeriesVisibilityAt(index);
+        else if (action === "delete") deleteSeriesAt(index);
       }
       function seriesNames(segments) {
         var names = [];
