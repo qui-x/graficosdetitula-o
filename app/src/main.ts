@@ -8,7 +8,21 @@ import {
   createAxisTicks as ticks
 } from "./graph-model";
 import { SnapshotHistory } from "./history";
+import {
+  buildProjectListItems,
+  createEmptyProjectDocument,
+  createUuid,
+  duplicateProjectDocument,
+  exportProjectDocument,
+  importProjectDocument,
+  openProjectRepository,
+  projectWithName,
+  uniqueImportedProjectName,
+  validateProjectDocument
+} from "./project-store";
+import type { ProjectDocument, ProjectStage } from "./titration-contract";
 import "./style.css";
+import "./project-manager.css";
 import "./a11y";
 import "./pwa";
 
@@ -17,6 +31,12 @@ import "./pwa";
     (function () {
       var COLORS = ["#087eaa", "#c44555", "#26836d", "#7856b5", "#d17a17", "#3972c6", "#a43b87", "#617d32"];
       var points = [];
+      var activeProject = null;
+      var projectRepository = null;
+      var projectStorageMode = "indexeddb";
+      var projectPersistenceSuppressed = false;
+      var activeProjectFingerprint = "";
+      var projectSaveInFlight = Promise.resolve();
       var seriesCatalog = ["Série A"];
       var hiddenSeries = {};
       var currentView = "curve";
@@ -39,6 +59,19 @@ import "./pwa";
       var newSeriesNameInput = document.getElementById("new-series-name");
       var seriesManagerFeedbackEl = document.getElementById("series-manager-feedback");
       var settingsStatusEl = document.getElementById("settings-status");
+      var projectManagerDialog = document.getElementById("project-manager-dialog");
+      var projectManagerCloseButton = document.getElementById("project-manager-close");
+      var projectCreateForm = document.getElementById("project-create-form");
+      var newProjectNameInput = document.getElementById("new-project-name");
+      var projectManagerFeedbackEl = document.getElementById("project-manager-feedback");
+      var projectStorageNoteEl = document.getElementById("project-storage-note");
+      var projectListEl = document.getElementById("project-list");
+      var projectCountEl = document.getElementById("project-count");
+      var projectEmptyStateEl = document.getElementById("project-empty-state");
+      var projectImportFileInput = document.getElementById("project-import-file");
+      var activeProjectNameEl = document.getElementById("active-project-name");
+      var openProjectManagerButton = document.getElementById("open-project-manager");
+      var exportProjectJsonButton = document.getElementById("export-project-json");
       var settingsWarnings = [];
       var seriesColors = {};
       var colorNamesSignature = "";
