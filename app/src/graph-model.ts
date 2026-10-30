@@ -4,12 +4,14 @@
  * preenchidas são revisáveis; pontos fora do domínio são descartados.
  */
 export interface RawMeasurement {
+  id?: string;
   series: string;
   volume: string;
   ph: string;
 }
 
 export interface ValidMeasurement {
+  id?: string;
   series: string;
   volume: number;
   ph: number;
@@ -67,6 +69,7 @@ export function validateMeasurementRows(rows: readonly RawMeasurement[]): Measur
     }
 
     valid.push({
+      id: typeof row.id === "string" ? row.id : undefined,
       series: String(row.series ?? "") === "" ? "Série A" : String(row.series ?? ""),
       volume,
       ph,
