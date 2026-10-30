@@ -8,6 +8,7 @@ import {
   createAxisTicks as ticks
 } from "./graph-model";
 import { SnapshotHistory } from "./history";
+import { ProjectManagerUI } from "./project-manager-ui";
 import {
   buildProjectListItems,
   createEmptyProjectDocument,
@@ -33,6 +34,7 @@ import "./pwa";
       var points = [];
       var activeProject = null;
       var projectRepository = null;
+      var projectManagerController = null;
       var projectStorageMode = "indexeddb";
       var projectPersistenceSuppressed = false;
       var activeProjectFingerprint = "";
@@ -1231,7 +1233,7 @@ import "./pwa";
           });
           await projectManagerController.initialize();
         } catch (error) {
-          projectManagerDialog.showModal();
+          if (projectManagerDialog instanceof HTMLDialogElement && !projectManagerDialog.open) projectManagerDialog.showModal();
           projectStorageNoteEl.textContent = "Não foi possível abrir o armazenamento de projetos.";
           setProjectManagerFeedback(error instanceof Error ? error.message : "Erro ao iniciar o gerenciador de projetos.", "error");
         }
@@ -1585,23 +1587,27 @@ import "./pwa";
       });
       setupWorkspaceNavigation();
       setupPanelDisclosures();
-      restorePanelStates();
       restoreWorkspaceView();
-      restoreDraft();
+      projectPersistenceSuppressed = true;
       ensureMeasurementIds(points);
       ensureSeriesCatalogue();
       syncEntrySeriesOptions();
       renderRows();
       renderAll();
       settleHistoryBaseline();
-      window.addEventListener("pagehide", persistDraft);
+      projectPersistenceSuppressed = false;
+      window.addEventListener("pagehide", function () {
+        flushHistoryCheckpoint();
+        void persistDraft();
+      });
       window.addEventListener("blur", flushHistoryCheckpoint);
       document.addEventListener("visibilitychange", function () {
         if (document.visibilityState === "hidden") {
           flushHistoryCheckpoint();
-          persistDraft();
+          void persistDraft();
         }
       });
+      void initializeProjectManager();
       window.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
           var closedAny = false;
@@ -1614,6 +1620,7 @@ import "./pwa";
           if (closedAny) event.stopPropagation();
           return;
         }
+        if (projectManagerDialog instanceof HTMLDialogElement && projectManagerDialog.open) return;
         var modifier = event.ctrlKey || event.metaKey;
         if (!modifier) return;
         var key = event.key.toLowerCase();
