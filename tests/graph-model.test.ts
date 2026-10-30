@@ -39,6 +39,17 @@ describe("validateMeasurementRows", () => {
     const result = validateMeasurementRows([{ series: "", volume: "1", ph: "7" }]);
     expect(result.valid[0]?.series).toBe("Série A");
   });
+
+  it("preserves series names exactly, including case and surrounding spaces", () => {
+    const names = ["Amostra", "amostra", "Amostra ", " Amostra"];
+    const result = validateMeasurementRows(names.map((series, index) => ({
+      series,
+      volume: String(index),
+      ph: "7"
+    })));
+    expect(result.valid.map(point => point.series)).toEqual(names);
+    expect(new Set(result.valid.map(point => point.series)).size).toBe(4);
+  });
 });
 
 describe("groupConsecutiveSegments and calculateSlopes", () => {
