@@ -9,6 +9,7 @@ import {
   importProjectDocument,
   projectWithName,
   uniqueImportedProjectName,
+  uniqueProjectCopyName,
   validateProjectDocument
 } from "../app/src/project-store";
 import type { ProjectDocument } from "../app/src/titration-contract";
@@ -142,6 +143,11 @@ describe("project document contract and JSON codec", () => {
   it("creates an unambiguous name for imported duplicates", () => {
     expect(uniqueImportedProjectName("Curva", ["Curva"])).toBe("Curva (importado)");
     expect(uniqueImportedProjectName("Curva", ["Curva", "Curva (importado)"])).toBe("Curva (importado 2)");
+  });
+
+  it("gives a duplicated project a copy suffix even when the original name is unique", () => {
+    expect(uniqueProjectCopyName("Titulação A", [])).toBe("Titulação A (cópia)");
+    expect(uniqueProjectCopyName("Titulação A", ["Titulação A", "Titulação A (cópia)"])).toBe("Titulação A (cópia 2)");
   });
 
   it("summarizes saved projects including series without measurements", () => {
