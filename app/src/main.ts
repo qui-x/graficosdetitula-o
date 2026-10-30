@@ -517,13 +517,13 @@ import "./pwa";
         }).length;
         var confirmation = 'Excluir a série "' + name + '"?';
         if (associatedCount > 0) {
-          confirmation += "\\n\\n" + associatedCount +
+          confirmation += "\n\n" + associatedCount +
             (associatedCount === 1 ? " registro associado será removido" : " registros associados serão removidos") +
             " da tabela e dos gráficos.";
         } else {
-          confirmation += "\\n\\nA série vazia será removida do catálogo.";
+          confirmation += "\n\nA série vazia será removida do catálogo.";
         }
-        confirmation += "\\n\\nA cor e a visibilidade próprias da série também serão removidas. Será possível recuperar a operação com Desfazer.";
+        confirmation += "\n\nA cor e a visibilidade próprias da série também serão removidas. Será possível recuperar a operação com Desfazer.";
 
         if (!window.confirm(confirmation)) return;
 
