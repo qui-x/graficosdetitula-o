@@ -725,6 +725,8 @@ import "./pwa";
 
       // Rascunho local: dados, cores e personalizações permanecem neste navegador.
       var DRAFT_KEY = "graficos_investigacao_draft_v1";
+      var PROJECT_MIGRATION_KEY = "graficos_investigacao_projects_migration_v1";
+      var LAST_PROJECT_KEY = "graficos_investigacao_last_project_v1";
       var draftSaveTimer = null;
       function collectSettings() {
         var values = {};
@@ -883,39 +885,132 @@ import "./pwa";
           });
         });
       }
-      function persistDraft() {
+      function workspaceStageFromView(view) {
+        return view === "graph" ? "grafico" : view === "export" ? "exportacao" : "dados";
+      }
+      function workspaceViewFromStage(stage) {
+        return stage === "grafico" ? "graph" : stage === "exportacao" ? "export" : "data";
+      }
+      function currentAccessibilityPreferences() {
+        var state = window.A11Y && (window.A11Y.state || window.A11Y.estado) || {};
+        var colorMode = state.colorblind === "acromatopsia" ? "grayscale" : state.colorblind;
+        return {
+          theme: state.theme === "light" ? "light" : "dark",
+          highContrast: state.contrast === true,
+          fontScale: Math.max(0.8, Math.min(2, Number(state.fontScale) || 1)),
+          extraTextSpacing: state.spacing === true,
+          reducedMotion: state.motion === true,
+          colorVisionSimulation: ["none", "protanopia", "deuteranopia", "tritanopia", "grayscale"].indexOf(colorMode) >= 0 ? colorMode : "none",
+          vlibrasEnabled: state.libras === true
+        };
+      }
+      function projectFingerprint(project) {
+        var snapshot = cloneState(project);
+        snapshot.updatedAt = "";
+        return JSON.stringify(snapshot);
+      }
+      function captureProjectDocument() {
+        if (!activeProject) return null;
+        var candidate = cloneState(activeProject);
+        var measurements = points.map(function (point) {
+          return {
+            id: String(point.id || createMeasurementId()),
+            seriesName: effectiveSeriesName(point.series),
+            volumeInput: String(point.volume == null ? "" : point.volume).slice(0, 80),
+            phInput: String(point.ph == null ? "" : point.ph).slice(0, 80)
+          };
+        });
+        var dataChanged = JSON.stringify(measurements) !== JSON.stringify(activeProject.data.measurements);
+        candidate.data.measurements = measurements;
+        candidate.visualSettings.seriesCatalog = currentSeriesNames().slice(0, 200);
+        candidate.visualSettings.seriesColors = Object.assign({}, seriesColors);
+        candidate.visualSettings.hiddenSeries = Object.keys(hiddenSeries).filter(function (name) { return hiddenSeries[name] === true; });
+        candidate.visualSettings.displayDecimals = displayDigits();
+        candidate.visualSettings.chartControls = {
+          currentView: currentView,
+          entrySeriesName: String(entrySeriesInput.value == null ? "" : entrySeriesInput.value),
+          settings: collectSettings()
+        };
+        var viewPrefix = currentView === "curve" ? "curve" : "derivative";
+        candidate.visualSettings.showGrid = document.getElementById("cfg-" + viewPrefix + "-grid").checked;
+        candidate.visualSettings.chartTitle = String(document.getElementById("cfg-" + viewPrefix + "-title").value || "");
+        candidate.visualSettings.xAxisLabel = String(document.getElementById("cfg-" + viewPrefix + "-x-label").value || "");
+        candidate.visualSettings.yAxisLabel = String(document.getElementById("cfg-" + viewPrefix + "-y-label").value || "");
+        candidate.preferences.lastStage = workspaceStageFromView(
+          document.querySelector('[data-workspace-view][aria-selected="true"]')?.getAttribute("data-workspace-view") || "data"
+        );
+        var advancedPanel = document.getElementById("customization");
+        var seriesPanel = document.getElementById("series-colors-details");
+        if (advancedPanel instanceof HTMLDetailsElement) candidate.preferences.advancedPanelOpen = advancedPanel.open;
+        if (seriesPanel instanceof HTMLDetailsElement) candidate.preferences.seriesPanelOpen = seriesPanel.open;
+        candidate.preferences.accessibility = currentAccessibilityPreferences();
+        if (dataChanged) candidate.revisions.data = activeProject.revisions.data + 1;
+        candidate.updatedAt = activeProject.updatedAt;
+        return candidate;
+      }
+      function legacyBackupFromProject(project) {
+        return {
+          schemaVersion: 1,
+          projectId: project.projectId,
+          points: project.data.measurements.map(function (measurement) {
+            return {
+              id: measurement.id,
+              series: measurement.seriesName,
+              volume: measurement.volumeInput,
+              ph: measurement.phInput
+            };
+          }),
+          currentView: project.visualSettings.chartControls?.currentView || "curve",
+          seriesCatalog: project.visualSettings.seriesCatalog || [],
+          hiddenSeries: (project.visualSettings.hiddenSeries || []).reduce(function (result, name) {
+            result[name] = true;
+            return result;
+          }, {}),
+          seriesColors: project.visualSettings.seriesColors,
+          settings: project.visualSettings.chartControls?.settings || {}
+        };
+      }
+      async function persistDraft() {
         if (draftSaveTimer !== null) {
           window.clearTimeout(draftSaveTimer);
           draftSaveTimer = null;
         }
+        if (!activeProject || !projectRepository || projectPersistenceSuppressed) return;
+        var candidate = captureProjectDocument();
+        if (!candidate) return;
+        var fingerprint = projectFingerprint(candidate);
+        if (fingerprint === activeProjectFingerprint) {
+          var savedTime = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(activeProject.updatedAt));
+          setDraftStatus("Projeto salvo · " + savedTime, "saved");
+          return;
+        }
+        candidate.updatedAt = new Date().toISOString();
+        var operation = projectSaveInFlight.then(function () {
+          return projectRepository.save(candidate);
+        });
+        projectSaveInFlight = operation.catch(function () { return undefined; });
         try {
-          var payload = {
-            schemaVersion: 1,
-            points: points.map(function (point) {
-              return {
-                id: String(point.id || createMeasurementId()),
-                series: String(point.series == null ? "" : point.series).slice(0, 60),
-                volume: String(point.volume == null ? "" : point.volume).slice(0, 80),
-                ph: String(point.ph == null ? "" : point.ph).slice(0, 80)
-              };
-            }),
-            currentView: currentView,
-            seriesCatalog: seriesCatalog.slice(),
-            hiddenSeries: Object.assign({}, hiddenSeries),
-            seriesColors: seriesColors,
-            settings: collectSettings()
-          };
-          localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
-          var savedAt = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
-          setDraftStatus("Salvo neste dispositivo · " + savedAt, "saved");
+          await operation;
+          activeProject = candidate;
+          activeProjectFingerprint = projectFingerprint(activeProject);
+          try { localStorage.setItem(DRAFT_KEY, JSON.stringify(legacyBackupFromProject(activeProject))); } catch (error) {
+            // O projeto já foi confirmado no repositório; a cópia legada é apenas uma recuperação auxiliar.
+          }
+          try { localStorage.setItem(LAST_PROJECT_KEY, activeProject.projectId); } catch (error) {
+            // A lista de projetos não depende desta referência auxiliar.
+          }
+          var savedAt = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(activeProject.updatedAt));
+          setDraftStatus("Projeto salvo neste dispositivo · " + savedAt, "saved");
         } catch (error) {
-          setDraftStatus("Não foi possível salvar localmente", "error");
+          setDraftStatus("Falha ao salvar o projeto. Exporte um JSON para manter uma cópia.", "error");
+          setProjectManagerFeedback(error instanceof Error ? error.message : "Não foi possível salvar o projeto.", "error");
         }
       }
       function scheduleDraftSave() {
+        if (!activeProject || projectPersistenceSuppressed) return;
         if (draftSaveTimer !== null) window.clearTimeout(draftSaveTimer);
-        setDraftStatus("Alterações pendentes…", "pending");
-        draftSaveTimer = window.setTimeout(persistDraft, 250);
+        setDraftStatus("Salvando alterações…", "pending");
+        draftSaveTimer = window.setTimeout(function () { void persistDraft(); }, 350);
       }
       function restoreDraft() {
         try {
