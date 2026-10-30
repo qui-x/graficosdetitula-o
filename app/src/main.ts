@@ -666,7 +666,15 @@ import "./pwa";
                 ph: String(point.ph == null ? "" : point.ph).slice(0, 80)
               };
             });
-            if (restoredPoints.length) points = restoredPoints;
+            restoredPoints = restoredPoints.filter(function (point) {
+              var seriesName = String(point.series || "").trim();
+              // Remove as linhas vazias automáticas das versões anteriores; preserva rascunhos incompletos digitados.
+              return nonEmpty(point) || (seriesName !== "" && seriesName !== "Série A");
+            });
+            if (restoredPoints.length) {
+              points = restoredPoints;
+              entrySeriesInput.value = String(points[points.length - 1].series || "").trim() || "Série A";
+            }
           }
           if (saved.currentView === "curve" || saved.currentView === "derivative") currentView = saved.currentView;
           if (saved.settings && typeof saved.settings === "object") {
@@ -822,10 +830,23 @@ import "./pwa";
         if (!imported.length) throw new Error("Não encontrei linhas com volume e pH. Verifique o cabeçalho e use ponto e vírgula para separar as colunas.");
         recordUndoCheckpoint();
         points = imported;
+        entrySeriesInput.value = String(imported[imported.length - 1].series || "").trim() || "Série A";
+        entryVolumeInput.value = "";
+        entryPhInput.value = "";
+        setEntryFeedback("Le CSV foi importado. Revise as leituras na tabela.", "success");
         renderRows();
         renderAll();
         settleHistoryBaseline();
       }
+      entryForm.addEventListener("input", function (event) {
+        if (event.target && typeof event.target.removeAttribute === "function") {
+          event.target.removeAttribute("aria-invalid");
+        }
+        if (entryStatusEl.textContent) {
+          entryStatusEl.textContent = "";
+          entryStatusEl.removeAttribute("data-state");
+        }
+      });
       entryForm.addEventListener("submit", function (event) {
         event.preventDefault();
         addPoint();
@@ -903,6 +924,10 @@ import "./pwa";
         if (!window.confirm("Limpar todos os pontos digitados?")) return;
         recordUndoCheckpoint();
         points = [];
+        entrySeriesInput.value = "Série A";
+        entryVolumeInput.value = "";
+        entryPhInput.value = "";
+        setEntryFeedback("", "");
         renderRows();
         renderAll();
         settleHistoryBaseline();
