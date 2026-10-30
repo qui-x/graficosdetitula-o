@@ -418,6 +418,41 @@
     "VisualSettings": {
       "type": "object",
       "additionalProperties": false,
+      "properties": {
+        "seriesCatalog": {
+          "type": "array",
+          "maxItems": 200,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "\\S"
+          },
+          "description": "Nomes literais das séries, incluindo as que ainda não têm leituras."
+        },
+        "chartControls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["currentView", "entrySeriesName", "settings"],
+          "properties": {
+            "currentView": {
+              "enum": ["curve", "derivative"]
+            },
+            "entrySeriesName": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "settings": {
+              "type": "object",
+              "maxProperties": 40,
+              "additionalProperties": {
+                "type": ["string", "boolean"]
+              }
+            }
+          }
+        }
+      },
       "required": [
         "showGrid",
         "showUncertaintyBars",
