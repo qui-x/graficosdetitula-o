@@ -1,0 +1,574 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:graficos-titulacao:project:v1",
+  "title": "Projeto do editor Gráficos de Titulação",
+  "description": "Formato de intercâmbio versionado do projeto. Regras cruzadas são complementadas pela validação da aplicação.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "schemaVersion",
+    "projectId",
+    "name",
+    "createdAt",
+    "updatedAt",
+    "data",
+    "scientificSettings",
+    "visualSettings",
+    "preferences",
+    "revisions",
+    "latestGeneration"
+  ],
+  "properties": {
+    "format": {
+      "const": "graficos-titulacao-project"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "projectId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "\\S"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "measurements"
+      ],
+      "properties": {
+        "measurements": {
+          "type": "array",
+          "maxItems": 20000,
+          "items": {
+            "$ref": "#/$defs/MeasurementRecord"
+          }
+        }
+      }
+    },
+    "scientificSettings": {
+      "$ref": "#/$defs/ScientificSettings"
+    },
+    "visualSettings": {
+      "$ref": "#/$defs/VisualSettings"
+    },
+    "preferences": {
+      "$ref": "#/$defs/ProjectPreferences"
+    },
+    "revisions": {
+      "$ref": "#/$defs/ProjectRevisions"
+    },
+    "latestGeneration": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/GenerationSnapshot"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "MeasurementRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "seriesName",
+        "volumeInput",
+        "phInput"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "seriesName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "\\S",
+          "description": "Identidade literal; diferencia maiúsculas/minúsculas e não normaliza espaços."
+        },
+        "volumeInput": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Volume original em mL; aceita vírgula ou ponto decimal na aplicação."
+        },
+        "phInput": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Valor original de pH digitado."
+        }
+      }
+    },
+    "InstrumentUncertainty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interpretation",
+        "value",
+        "source"
+      ],
+      "properties": {
+        "interpretation": {
+          "enum": [
+            "maximum-tolerance",
+            "standard-uncertainty"
+          ]
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0
+        },
+        "source": {
+          "enum": [
+            "manufacturer-specification",
+            "calibration",
+            "user-estimate",
+            "other"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "description": "Valor absoluto; mL para volume e unidade de pH para pH. Zero somente quando informado explicitamente; null significa desconhecido."
+    },
+    "InstrumentUncertaintySettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "volume",
+        "ph",
+        "standardPropagationAssumption"
+      ],
+      "properties": {
+        "volume": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/InstrumentUncertainty"
+            }
+          ]
+        },
+        "ph": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/InstrumentUncertainty"
+            }
+          ]
+        },
+        "standardPropagationAssumption": {
+          "enum": [
+            "not-configured",
+            "independent-first-order"
+          ]
+        }
+      },
+      "description": "Na versão 1, cada valor de incerteza é uniforme para todas as medições do projeto."
+    },
+    "RepeatedVolumeDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seriesName",
+        "policy"
+      ],
+      "properties": {
+        "seriesName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "\\S"
+        },
+        "policy": {
+          "enum": [
+            "connect-in-original-order",
+            "do-not-connect-equal-volume-pair"
+          ]
+        }
+      }
+    },
+    "ScientificSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "validPhRange",
+        "curveRepresentation",
+        "comparisonMode",
+        "instrumentUncertainty",
+        "repeatedVolumeDecisions"
+      ],
+      "properties": {
+        "validPhRange": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "description": "A aplicação exige min < max."
+        },
+        "curveRepresentation": {
+          "enum": [
+            "pontos",
+            "segmentos",
+            "catmull-rom"
+          ]
+        },
+        "comparisonMode": {
+          "enum": [
+            "sobreposicao",
+            "separados"
+          ]
+        },
+        "instrumentUncertainty": {
+          "$ref": "#/$defs/InstrumentUncertaintySettings"
+        },
+        "repeatedVolumeDecisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RepeatedVolumeDecision"
+          },
+          "description": "No modo segmentos, uma decisão por série com volumes repetidos é obrigatória antes da geração."
+        }
+      }
+    },
+    "ValidatedMeasurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "seriesName",
+        "volumeMl",
+        "ph",
+        "originalOrder"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "seriesName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "\\S"
+        },
+        "volumeMl": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ph": {
+          "type": "number"
+        },
+        "originalOrder": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "GenerationWarning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "volume-sorted-for-plot",
+            "repeated-volume-connection-selected",
+            "repeated-volume-needs-choice",
+            "interpolation-disabled-for-repeated-volume",
+            "interpolation-overshoot-fallback",
+            "interpolation-insufficient-points",
+            "uncertainty-not-available",
+            "uncertainty-types-mixed",
+            "uncertainty-denominator-includes-zero",
+            "uncertainty-propagation-not-configured",
+            "uncertainty-zero-width-domain",
+            "degenerate-axis-domain"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "measurementIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "seriesName": {
+          "type": "string",
+          "maxLength": 80
+        }
+      }
+    },
+    "GenerationSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "engineVersion",
+        "algorithmVersions",
+        "generatedAt",
+        "sourceDataRevision",
+        "sourceScientificRevision",
+        "measurements",
+        "scientificSettings",
+        "warnings"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sourceDataRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sourceScientificRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "measurements": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20000,
+          "items": {
+            "$ref": "#/$defs/ValidatedMeasurement"
+          }
+        },
+        "scientificSettings": {
+          "$ref": "#/$defs/ScientificSettings"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GenerationWarning"
+          }
+        },
+        "engineVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "algorithmVersions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "catmullRom",
+            "axisTicks",
+            "uncertainty"
+          ],
+          "properties": {
+            "catmullRom": {
+              "const": "centripetal-alpha-0.5-local-range-guard-v1"
+            },
+            "axisTicks": {
+              "const": "nice-1-2-5-v1"
+            },
+            "uncertainty": {
+              "const": "interval-bounds-or-independent-first-order-v1"
+            }
+          }
+        }
+      }
+    },
+    "VisualSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "showGrid",
+        "showUncertaintyBars",
+        "showGuideLines",
+        "displayDecimals",
+        "seriesColors",
+        "hiddenSeries",
+        "chartTitle",
+        "xAxisLabel",
+        "yAxisLabel"
+      ],
+      "properties": {
+        "showGrid": {
+          "type": "boolean"
+        },
+        "showUncertaintyBars": {
+          "type": "boolean"
+        },
+        "showGuideLines": {
+          "type": "boolean"
+        },
+        "displayDecimals": {
+          "enum": [
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        "seriesColors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
+        "hiddenSeries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "chartTitle": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "xAxisLabel": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "yAxisLabel": {
+          "type": "string",
+          "maxLength": 80
+        }
+      }
+    },
+    "AccessibilityPreferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "theme",
+        "highContrast",
+        "fontScale",
+        "extraTextSpacing",
+        "reducedMotion",
+        "colorVisionSimulation",
+        "vlibrasEnabled"
+      ],
+      "properties": {
+        "theme": {
+          "enum": [
+            "system",
+            "light",
+            "dark"
+          ]
+        },
+        "highContrast": {
+          "type": "boolean"
+        },
+        "fontScale": {
+          "type": "number",
+          "minimum": 0.8,
+          "maximum": 2
+        },
+        "extraTextSpacing": {
+          "type": "boolean"
+        },
+        "reducedMotion": {
+          "type": "boolean"
+        },
+        "colorVisionSimulation": {
+          "enum": [
+            "none",
+            "protanopia",
+            "deuteranopia",
+            "tritanopia",
+            "grayscale"
+          ]
+        },
+        "vlibrasEnabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ProjectPreferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lastStage",
+        "advancedPanelOpen",
+        "seriesPanelOpen",
+        "accessibility"
+      ],
+      "properties": {
+        "lastStage": {
+          "enum": [
+            "dados",
+            "grafico",
+            "exportacao"
+          ]
+        },
+        "advancedPanelOpen": {
+          "type": "boolean"
+        },
+        "seriesPanelOpen": {
+          "type": "boolean"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityPreferences"
+        }
+      }
+    },
+    "ProjectRevisions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "data",
+        "scientific"
+      ],
+      "properties": {
+        "data": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scientific": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

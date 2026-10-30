@@ -1,0 +1,59 @@
+name: Build and publish Gráficos de investigação
+
+on:
+  push:
+    branches:
+      - main
+      - feat/editor-graficos-manual
+    paths:
+      - "app/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tests/**"
+      - ".github/workflows/build-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Validar tipos, executar testes e compilar
+        run: npm run build
+
+      - name: Publicar o build estático na raiz da branch do Pages
+        shell: bash
+        run: |
+          rm -rf assets icons manifest.webmanifest sw.js workbox-*.js registerSW.js pwa-*.png apple-touch-icon.png favicon.ico
+          cp -a dist/. .
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "O bundle publicado já está atualizado."
+            exit 0
+          fi
+          git commit -m "build: publicar bundle PWA [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
