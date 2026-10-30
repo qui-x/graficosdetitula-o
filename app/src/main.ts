@@ -100,9 +100,9 @@ import "./pwa";
         document.querySelectorAll("[data-workspace-section]").forEach(function (section) {
           section.hidden = section.getAttribute("data-workspace-section") !== view;
         });
-        if (persist) {
-          try { localStorage.setItem(WORKSPACE_VIEW_STORAGE_KEY, view); }
-          catch (error) { /* A navegação continua funcional sem persistência. */ }
+        if (persist && activeProject && !projectPersistenceSuppressed) {
+          activeProject.preferences.lastStage = workspaceStageFromView(view);
+          scheduleDraftSave();
         }
         if (refresh) {
           window.requestAnimationFrame(function () {
@@ -117,14 +117,7 @@ import "./pwa";
       }
 
       function restoreWorkspaceView() {
-        var savedView = "data";
-        try {
-          var saved = localStorage.getItem(WORKSPACE_VIEW_STORAGE_KEY);
-          if (WORKSPACE_VIEWS.indexOf(saved) !== -1) savedView = saved;
-        } catch (error) {
-          // Inicia na etapa de dados quando o armazenamento não está disponível.
-        }
-        applyWorkspaceView(savedView, false, false);
+        applyWorkspaceView("data", false, false);
       }
 
       function setupWorkspaceNavigation() {
@@ -303,12 +296,7 @@ import "./pwa";
         return name === "" ? "Série A" : name;
       }
       function createMeasurementId() {
-        try {
-          if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
-        } catch (error) {
-          // Usa o identificador local alternativo em navegadores sem randomUUID.
-        }
-        return "m-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
+        return createUuid();
       }
       function ensureMeasurementIds(rows) {
         var seen = Object.create(null);
@@ -858,27 +846,19 @@ import "./pwa";
         if (draftStatusTextEl) draftStatusTextEl.textContent = message;
       }
       function savePanelStates() {
-        try {
-          var state = {};
-          PANEL_IDS.forEach(function (id) {
-            var panel = document.getElementById(id);
-            if (panel instanceof HTMLDetailsElement) state[id] = panel.open;
-          });
-          localStorage.setItem(PANEL_STORAGE_KEY, JSON.stringify(state));
-        } catch (error) {
-          // As áreas recolhíveis continuam funcionais sem armazenamento de preferências.
-        }
+        if (!activeProject || projectPersistenceSuppressed) return;
+        var seriesPanel = document.getElementById("series-colors-details");
+        var advancedPanel = document.getElementById("customization");
+        if (seriesPanel instanceof HTMLDetailsElement) activeProject.preferences.seriesPanelOpen = seriesPanel.open;
+        if (advancedPanel instanceof HTMLDetailsElement) activeProject.preferences.advancedPanelOpen = advancedPanel.open;
+        scheduleDraftSave();
       }
-      function restorePanelStates() {
-        try {
-          var saved = JSON.parse(localStorage.getItem(PANEL_STORAGE_KEY) || "{}");
-          PANEL_IDS.forEach(function (id) {
-            var panel = document.getElementById(id);
-            if (panel instanceof HTMLDetailsElement && typeof saved[id] === "boolean") panel.open = saved[id];
-          });
-        } catch (error) {
-          // Mantém os estados padrão declarados no HTML.
-        }
+      function restorePanelStates(project) {
+        if (!project) return;
+        var seriesPanel = document.getElementById("series-colors-details");
+        var advancedPanel = document.getElementById("customization");
+        if (seriesPanel instanceof HTMLDetailsElement) seriesPanel.open = project.preferences.seriesPanelOpen;
+        if (advancedPanel instanceof HTMLDetailsElement) advancedPanel.open = project.preferences.advancedPanelOpen;
       }
       function setupPanelDisclosures() {
         document.querySelectorAll("details[data-persist-open]").forEach(function (panel) {
