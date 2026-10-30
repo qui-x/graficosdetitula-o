@@ -157,7 +157,7 @@ import "./pwa";
           var seriesName = effectiveSeriesName(point.series);
           var color = colorFor(seriesName, names);
           var paddedIndex = String(index + 1).padStart(2, "0");
-          return '<tr data-index="' + index + '">' +
+          return '<tr data-index="' + index + '" data-measurement-id="' + escapeHTML(point.id || "") + '">' +
             '<td class="row-index-cell" data-label="Nº"><span class="row-index" aria-label="Ponto ' + (index + 1) + '">' + paddedIndex + '</span></td>' +
             '<td data-label="Série / amostra"><div class="series-edit"><span class="series-swatch" data-series-swatch aria-hidden="true" style="background-color:' + color + '"></span><label class="series-input-wrap"><span class="visually-hidden">Nome da série do ponto ' + (index + 1) + '</span>' +
             '<input class="series-input" id="series-' + index + '" type="text" data-field="series" maxlength="60" value="' + escapeHTML(point.series) + '" placeholder="Ex.: Amostra A" aria-label="Série do ponto ' + (index + 1) + '"></label></div></td>' +
@@ -982,16 +982,15 @@ import "./pwa";
           entryPhInput.focus();
           return;
         }
-        var series = String(entrySeriesInput.value || "").trim();
-        if (!series) {
-          series = points.length ? String(points[points.length - 1].series || "").trim() : "";
-          series = series || "Série A";
-        }
+        var series = String(entrySeriesInput.value == null ? "" : entrySeriesInput.value);
+        if (series === "") series = currentSeriesNames()[0] || "Série A";
+        series = registerSeriesName(series);
         recordUndoCheckpoint();
-        points.push({ series: series, volume: volumeText, ph: phText });
+        points.push({ id: createMeasurementId(), series: series, volume: volumeText, ph: phText });
         renderRows();
         renderAll();
         settleHistoryBaseline();
+        syncEntrySeriesOptions();
         entrySeriesInput.value = series;
         entryVolumeInput.value = "";
         entryPhInput.value = "";
@@ -1062,12 +1061,19 @@ import "./pwa";
             series = "Série A"; volume = fields[0] || ""; ph = fields[1] || "";
           }
           if (String(volume).trim() === "" && String(ph).trim() === "") return;
-          imported.push({ series: String(series || "Série A").trim() || "Série A", volume: String(volume || "").trim(), ph: String(ph || "").trim() });
+          imported.push({
+            id: createMeasurementId(),
+            series: effectiveSeriesName(series),
+            volume: String(volume == null ? "" : volume).trim(),
+            ph: String(ph == null ? "" : ph).trim()
+          });
         });
         if (!imported.length) throw new Error("Não encontrei linhas com volume e pH. Verifique o cabeçalho e use ponto e vírgula para separar as colunas.");
         recordUndoCheckpoint();
         points = imported;
-        entrySeriesInput.value = String(imported[imported.length - 1].series || "").trim() || "Série A";
+        ensureSeriesCatalogue();
+        syncEntrySeriesOptions();
+        entrySeriesInput.value = effectiveSeriesName(imported[imported.length - 1].series);
         entryVolumeInput.value = "";
         entryPhInput.value = "";
         setEntryFeedback("Le CSV foi importado. Revise as leituras na tabela.", "success");
@@ -1254,7 +1260,6 @@ import "./pwa";
         if (!Number.isInteger(index)) return;
         recordUndoCheckpoint();
         points.splice(index, 1);
-        if (!points.length) points.push({ series: "Série A", volume: "", ph: "" });
         renderRows();
         renderAll();
         settleHistoryBaseline();
