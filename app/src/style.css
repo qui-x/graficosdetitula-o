@@ -942,4 +942,227 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
       .series-manager-actions button:last-child { grid-column: 1; }
     }
 
+
+    /* Sistema compacto de ações: prioridade, menu secundário e alvos consistentes. */
+    .compact-action-menu {
+      position: relative;
+      display: inline-block;
+      margin: 0;
+      color: var(--text);
+      font-size: .8rem;
+    }
+    .compact-action-menu > summary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .45rem;
+      min-height: 40px;
+      min-width: 76px;
+      padding: .42rem .72rem;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--panel-soft);
+      color: var(--text);
+      font-size: .78rem;
+      font-weight: 700;
+      line-height: 1.2;
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+    }
+    .compact-action-menu > summary::-webkit-details-marker { display: none; }
+    .compact-action-menu > summary::marker { content: ""; }
+    .compact-action-menu > summary::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      flex: 0 0 6px;
+      margin-top: -3px;
+      border-right: 1.7px solid currentColor;
+      border-bottom: 1.7px solid currentColor;
+      transform: rotate(45deg);
+    }
+    .compact-action-menu[open] > summary {
+      border-color: var(--accent);
+      background: var(--accent-strong);
+    }
+    .compact-action-menu[open] > summary::after {
+      margin-top: 3px;
+      transform: rotate(225deg);
+    }
+    .compact-action-menu-items {
+      position: absolute;
+      z-index: 80;
+      top: calc(100% + .35rem);
+      right: 0;
+      display: grid;
+      min-width: 190px;
+      gap: .3rem;
+      padding: .45rem;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--panel);
+      box-shadow: 0 14px 32px #0004;
+    }
+    .compact-action-menu-items button {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: 100%;
+      min-height: 40px;
+      padding: .42rem .6rem;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: .77rem;
+      line-height: 1.2;
+      text-align: left;
+      white-space: normal;
+    }
+    .compact-action-menu-items button:hover {
+      border-color: var(--line);
+      background: var(--panel-soft);
+    }
+    .compact-action-menu-items button.is-destructive {
+      border-color: #70404a;
+      background: #321e26;
+      color: #ffc1c5;
+    }
+    :root[data-theme="light"] .compact-action-menu > summary {
+      border-color: #c5d3df;
+      background: #f4f7fa;
+      color: #254158;
+    }
+    :root[data-theme="light"] .compact-action-menu[open] > summary {
+      border-color: #7daebb;
+      background: #e5f2f6;
+      color: #174b5f;
+    }
+    :root[data-theme="light"] .compact-action-menu-items {
+      border-color: #c7d3df;
+      background: #fff;
+      box-shadow: 0 12px 28px rgb(19 43 62 / .18);
+    }
+    :root[data-theme="light"] .compact-action-menu-items button { color: #203b52; }
+    :root[data-theme="light"] .compact-action-menu-items button:hover {
+      border-color: #d7e1e9;
+      background: #f2f6f9;
+    }
+    :root[data-theme="light"] .compact-action-menu-items button.is-destructive {
+      border-color: #ddb8be;
+      background: #fff0f1;
+      color: #8e2434;
+    }
+    :root[data-contrast="on"] .compact-action-menu > summary,
+    :root[data-contrast="on"] .compact-action-menu-items,
+    :root[data-contrast="on"] .compact-action-menu-items button {
+      border-color: #fff !important;
+      background: #000 !important;
+      color: #fff !important;
+    }
+    :root[data-contrast="on"] .compact-action-menu-items button.is-destructive {
+      color: #ff0 !important;
+    }
+
+    /* Menos botões repetidos por série: salvar e visibilidade são ações rápidas. */
+    .series-manager-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .4rem;
+      margin-top: .55rem;
+    }
+    .series-manager-actions > button {
+      min-height: 40px;
+      padding: .42rem .68rem;
+      border-radius: 9px;
+      font-size: .76rem;
+      line-height: 1.2;
+    }
+    .series-manager-actions .series-save-button {
+      border-color: #3d7288;
+      background: #18394b;
+      color: #c7eff8;
+    }
+    .series-manager-actions .series-visibility-button {
+      min-width: 92px;
+      background: transparent;
+    }
+    .series-manager-actions .series-visibility-button[aria-pressed="false"] {
+      border-style: dashed;
+      color: var(--muted);
+    }
+    .series-actions-menu { margin-left: auto; }
+    .series-actions-menu .compact-action-menu-items { min-width: 180px; }
+
+    /* Desfazer e refazer ocupam um único grupo visual. */
+    #data-panel .history-controls {
+      gap: .18rem;
+      padding: .18rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-soft);
+    }
+    #data-panel .history-button {
+      min-height: 36px;
+      min-width: 40px;
+      padding: .32rem .52rem;
+      border-color: transparent;
+      border-radius: 7px;
+      background: transparent;
+      font-size: .75rem;
+    }
+    #data-panel .history-button:not(:disabled):hover {
+      border-color: var(--line);
+      background: var(--panel);
+    }
+
+    /* Alvos de toque e texto harmonizados nos grupos de ação recorrentes. */
+    #data-panel .data-toolbar-primary button,
+    #data-panel .data-actions-menu > summary,
+    .export-card-actions button,
+    .export-card > button {
+      min-height: 42px;
+      padding: .45rem .72rem;
+      border-radius: 9px;
+      font-size: .79rem;
+      line-height: 1.2;
+    }
+    .export-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      width: 100%;
+      gap: .4rem;
+    }
+    .export-card-actions button { flex: 1 1 132px; }
+    .export-card { gap: .48rem; }
+    .export-card p { line-height: 1.45; }
+    .export-grid { align-items: stretch; }
+    .export-card-meta { margin-top: .15rem; }
+
+    @media (max-width: 560px) {
+      .series-manager-actions {
+        display: flex;
+        align-items: stretch;
+        flex-wrap: wrap;
+        gap: .35rem;
+      }
+      .series-manager-actions > button {
+        flex: 1 1 104px;
+        min-width: 0;
+        min-height: 44px;
+        padding-inline: .45rem;
+        font-size: .73rem;
+      }
+      .series-actions-menu { margin-left: 0; }
+      .series-actions-menu > summary { min-height: 44px; }
+      #data-panel .history-button { min-height: 40px; }
+      .export-card-actions button { flex: 1 1 122px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .compact-action-menu > summary::after { transition: none; }
+    }
+
 }
