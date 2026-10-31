@@ -55,6 +55,8 @@ import "./pwa";
       var legendEl = document.getElementById("series-legend");
       var validationEl = document.getElementById("validation");
       var downloadSvgButton = document.getElementById("download-svg");
+      var downloadPngButton = document.getElementById("download-png");
+      var graphExportStatusEl = document.getElementById("graph-export-status");
       var chartTitle = document.getElementById("chart-title");
       var chartExplanation = document.getElementById("chart-explanation");
       var seriesColorsEl = document.getElementById("series-colors");
@@ -630,6 +632,8 @@ import "./pwa";
       function emptyMessage(title, message) {
         chartHost.innerHTML = '<div class="empty-state"><strong>' + escapeHTML(title) + '</strong><p>' + escapeHTML(message) + '</p></div>';
         downloadSvgButton.disabled = true;
+        downloadPngButton.disabled = true;
+        setGraphExportStatus("", "");
         legendEl.innerHTML = "";
       }
       function renderCurve(segments, validPoints, allValidHidden) {
@@ -681,6 +685,8 @@ import "./pwa";
         svg += '</g></svg>';
         chartHost.innerHTML = svg;
         downloadSvgButton.disabled = false;
+        downloadPngButton.disabled = false;
+        setGraphExportStatus("", "");
         buildLegend(names, colorNames);
         chartTitle.textContent = config.title;
         chartExplanation.textContent = "Pontos inseridos; a linha apenas conecta leituras. Pontos fora dos limites não aparecem.";
@@ -743,6 +749,8 @@ import "./pwa";
         svg += "</svg>";
         chartHost.innerHTML = svg;
         downloadSvgButton.disabled = false;
+        downloadPngButton.disabled = false;
+        setGraphExportStatus("", "");
         buildLegend(names, colorNames);
         chartTitle.textContent = config.title;
         chartExplanation.textContent = "ΔpH/ΔV é calculado entre leituras consecutivas. Valores negativos indicam queda do pH.";
@@ -1410,8 +1418,7 @@ import "./pwa";
         setEntryFeedback("Leitura adicionada à tabela. Você pode continuar na mesma série ou trocar o nome.", "success");
         entryVolumeInput.focus();
       }
-      function download(name, type, text) {
-        var blob = new Blob([text], { type: type });
+      function downloadBlob(name, blob) {
         var url = URL.createObjectURL(blob);
         var link = document.createElement("a");
         link.href = url;
@@ -1419,7 +1426,90 @@ import "./pwa";
         document.body.appendChild(link);
         link.click();
         link.remove();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }
+      function download(name, type, text) {
+        downloadBlob(name, new Blob([text], { type: type }));
+      }
+      function setGraphExportStatus(message, state) {
+        if (!graphExportStatusEl) return;
+        graphExportStatusEl.textContent = message || "";
+        if (state) graphExportStatusEl.dataset.state = state;
+        else graphExportStatusEl.removeAttribute("data-state");
+      }
+      function exportChartPng() {
+        var svg = chartHost.querySelector("svg");
+        if (!svg || downloadPngButton.disabled) return;
+
+        var exportView = currentView;
+        var logicalWidth = Math.max(1, Math.round(W));
+        var logicalHeight = Math.max(1, Math.round(H));
+        var scale = 2;
+        var clone = svg.cloneNode(true);
+        clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        clone.setAttribute("width", String(logicalWidth));
+        clone.setAttribute("height", String(logicalHeight));
+
+        var svgBlob = new Blob(
+          [new XMLSerializer().serializeToString(clone)],
+          { type: "image/svg+xml;charset=utf-8" }
+        );
+        var svgUrl = URL.createObjectURL(svgBlob);
+        var image = new Image();
+        var completed = false;
+
+        function finish(message, state) {
+          if (completed) return;
+          completed = true;
+          URL.revokeObjectURL(svgUrl);
+          downloadPngButton.disabled = !chartHost.querySelector("svg");
+          setGraphExportStatus(message, state);
+        }
+
+        setGraphExportStatus("Preparando PNG em resolução 2×…", "pending");
+        downloadPngButton.disabled = true;
+
+        image.onload = function () {
+          try {
+            var canvas = document.createElement("canvas");
+            canvas.width = logicalWidth * scale;
+            canvas.height = logicalHeight * scale;
+            var context = canvas.getContext("2d");
+            if (!context) throw new Error("Não foi possível preparar a imagem.");
+
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            if (typeof canvas.toBlob !== "function") {
+              throw new Error("Este navegador não oferece conversão de imagem PNG.");
+            }
+
+            canvas.toBlob(function (pngBlob) {
+              if (!pngBlob) {
+                finish("Não foi possível gerar o PNG. Tente exportar o gráfico em SVG.", "error");
+                return;
+              }
+              try {
+                var filename = exportView === "curve"
+                  ? "grafico-ph-volume.png"
+                  : "grafico-derivada-dph-dv.png";
+                downloadBlob(filename, pngBlob);
+                finish("PNG gerado em " + canvas.width + " × " + canvas.height + " pixels.", "success");
+              } catch (error) {
+                finish("Não foi possível iniciar o download do PNG. Tente exportar em SVG.", "error");
+              }
+            }, "image/png");
+          } catch (error) {
+            finish(error && error.message
+              ? error.message + " Tente exportar o gráfico em SVG."
+              : "Não foi possível converter o gráfico em PNG. Tente exportar em SVG.", "error");
+          }
+        };
+        image.onerror = function () {
+          finish("Não foi possível carregar o gráfico para conversão. A exportação SVG continua disponível.", "error");
+        };
+        image.src = svgUrl;
       }
       function csvField(value, delimiter) {
         var text = String(value == null ? "" : value);
@@ -1649,6 +1739,7 @@ import "./pwa";
         clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
         download(currentView === "curve" ? "grafico-ph-volume.svg" : "grafico-derivada-dph-dv.svg", "image/svg+xml;charset=utf-8", new XMLSerializer().serializeToString(clone));
       });
+      downloadPngButton.addEventListener("click", exportChartPng);
       document.querySelectorAll("[data-view]").forEach(function (button) {
         button.addEventListener("click", function () {
           flushHistoryCheckpoint();

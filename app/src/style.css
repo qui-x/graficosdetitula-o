@@ -668,6 +668,20 @@ text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif} .grid{stroke:#dc
     .export-card button { margin-top: .15rem; }
     .export-card-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
     .export-card-meta { color: var(--muted); font-size: .72rem; line-height: 1.4; }
+    .export-card-status {
+      color: var(--muted);
+      font-size: .72rem;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+    .export-card-status:empty { display: none; }
+    .export-card-status[data-state="success"] { color: #8fd9bd; }
+    .export-card-status[data-state="error"] { color: #ffb5b5; }
+    :root[data-theme="light"] .export-card-status[data-state="success"] { color: #17664f; }
+    :root[data-theme="light"] .export-card-status[data-state="error"] { color: #9b2037; }
+    :root[data-contrast="on"] .export-card-status { color: #fff !important; }
+    :root[data-contrast="on"] .export-card-status[data-state="success"],
+    :root[data-contrast="on"] .export-card-status[data-state="error"] { color: #ff0 !important; }
     .export-note {
       margin: 1rem 0 0; padding: .8rem .95rem; border: 1px solid var(--line);
       border-left: 3px solid var(--accent); border-radius: 10px; background: var(--panel-soft);
