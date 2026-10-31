@@ -34,7 +34,7 @@ O princípio central é a transparência: **o gráfico representa os dados infor
 | **Dois gráficos** | Alternar entre `pH × volume` e `ΔpH/ΔV`. |
 | **Personalização** | Editar títulos, rótulos, limites e intervalos dos eixos; configurar precisão de 3 a 6 casas decimais. |
 | **Estilo visual** | Definir cores individuais por série e controlar grade, linhas e marcadores. |
-| **Importação e exportação** | Trabalhar com CSV, exportar gráficos em SVG e salvar configurações em JSON. |
+| **Importação e exportação** | Trabalhar com CSV, exportar gráficos em PNG ou SVG e salvar configurações em JSON. |
 | **Impressão** | Preparar a visualização para impressão ou documentação. |
 | **Acessibilidade** | Usar temas claro/escuro, alto contraste, ampliação de texto, espaçamento, leitura simples, redução de movimento e filtros de visão de cores. |
 | **Espaço de trabalho** | Recolher painéis, agrupar ações em menus, lembrar a disposição escolhida e acompanhar o salvamento local. |
@@ -48,7 +48,7 @@ O princípio central é a transparência: **o gráfico representa os dados infor
 1. Adicione uma leitura e preencha o volume e o pH medido.
 2. Informe o nome da série. Leituras com o mesmo nome são agrupadas visualmente.
 3. Alterne entre os dois tipos de gráfico e ajuste a apresentação em **Personalizar gráficos**.
-4. Exporte os dados em CSV, o gráfico em SVG ou os ajustes em JSON, conforme a necessidade.
+4. Exporte os dados em CSV, o gráfico em PNG ou SVG ou os ajustes em JSON, conforme a necessidade.
 
 Valores decimais aceitam vírgula ou ponto. Leituras incompletas e valores fora do domínio são sinalizados e não entram no gráfico. Intervalos manuais dos eixos respeitam a resolução mínima de **0,001**; quando a escala produzir marcações demais, a ferramenta amplia o intervalo para preservar a legibilidade.
 
@@ -59,7 +59,7 @@ O editor mantém quatro etapas de trabalho e um gerenciador de projetos separado
 1. **Dados:** importar CSV, adicionar ou corrigir medições na tabela e criar, renomear, duplicar ou excluir séries.
 2. **Análise:** escolher entre pH × volume e ΔpH/ΔV e consultar o significado da representação.
 3. **Gráfico:** visualizar o resultado, controlar a visibilidade das séries e personalizar títulos, rótulos, escalas e apresentação.
-4. **Exportar:** baixar dados em CSV brasileiro ou internacional, exportar o gráfico em SVG ou preparar a impressão/PDF e importar ou exportar os ajustes visuais em JSON.
+4. **Exportar:** baixar dados em CSV brasileiro ou internacional, exportar o gráfico em PNG ou SVG ou preparar a impressão/PDF e importar ou exportar os ajustes visuais em JSON.
 
 **Projetos**, no cabeçalho, reúne as operações da investigação completa: criar, abrir, importar, duplicar, renomear, excluir e exportar o projeto atual em JSON. Assim, o arquivo completo não se confunde com o CSV de medições ou com o JSON restrito aos ajustes do gráfico.
 
