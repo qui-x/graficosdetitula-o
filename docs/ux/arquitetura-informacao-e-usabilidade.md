@@ -48,7 +48,7 @@ Editor (quatro etapas)
 │   ├── Exibição das séries (mostrar / ocultar)
 │   └── Personalização de escalas, títulos e rótulos
 └── 4. Exportar
-    ├── Gráfico SVG / impressão-PDF
+    ├── Gráfico PNG / SVG / impressão-PDF
     ├── Leituras CSV (Brasil ou internacional)
     └── Ajustes visuais JSON
 ```
@@ -60,7 +60,7 @@ Editor (quatro etapas)
 - **Análise concentra a escolha da representação.** pH × volume e ΔpH/ΔV são alternativas de leitura dos mesmos dados; a escolha não modifica as medições.
 - **Gráfico concentra a visualização.** O gráfico ocupa a primeira área de conteúdo; a legenda, a visibilidade das séries e a personalização ficam em áreas auxiliares.
 - **A visibilidade permanece separada do CRUD.** Ocultar uma série altera apenas a visualização; não apaga as leituras.
-- **Exportar concentra produtos derivados.** CSV, SVG, PDF e ajustes de apresentação são saídas específicas. O JSON completo fica no gerenciador de Projetos para evitar confusão com o JSON de ajustes.
+- **Exportar concentra produtos derivados.** CSV, PNG, SVG, PDF e ajustes de apresentação são saídas específicas. O JSON completo fica no gerenciador de Projetos para evitar confusão com o JSON de ajustes.
 - **O fluxo principal tem quatro etapas.** Projetos continua como gerenciador global, fora da sequência de trabalho.
 
 ## 3. Regras de consistência dos rótulos
@@ -87,7 +87,7 @@ O teste deve verificar se uma pessoa consegue localizar as ações sem receber i
 | Duplicar uma série | Dados → Séries e amostras → Mais → Duplicar | Surge uma nova série independente com leituras copiadas. |
 | Ocultar e reexibir uma série | Gráfico → Exibição das séries | A curva muda, mas as leituras continuam armazenadas. |
 | Ajustar a apresentação | Gráfico → Personalizar gráficos | Título, rótulos e escalas refletem os valores definidos. |
-| Gerar uma saída | Exportar → SVG/PDF ou CSV | O formato escolhido é produzido. |
+| Gerar uma saída | Exportar → PNG/SVG/PDF ou CSV | O formato escolhido é produzido. |
 | Fazer cópia integral | Projetos → Exportar projeto atual | O arquivo JSON permite recuperar a investigação completa. |
 
 ### O que observar
