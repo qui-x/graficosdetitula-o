@@ -408,13 +408,15 @@ Amostra B;1;6,9</code>
               <div class="export-grid">
                 <article class="export-card">
                   <div class="export-card-icon" aria-hidden="true">↗</div>
-                  <h3>Gráfico · SVG ou PDF</h3>
-                  <p>Exporte a visualização ativa como imagem vetorial ou prepare a impressão para salvar em PDF.</p>
+                  <h3>Gráfico · PNG, SVG ou PDF</h3>
+                  <p>Baixe a visualização ativa como imagem PNG ou SVG vetorial, ou prepare a impressão para salvar em PDF.</p>
                   <div class="export-card-actions">
+                    <button type="button" id="download-png" disabled>Baixar PNG</button>
                     <button type="button" id="download-svg" class="primary" disabled>Baixar SVG</button>
                     <button type="button" id="print-chart">Imprimir / PDF</button>
                   </div>
-                  <span class="export-card-meta">Usa o gráfico ativo: pH × volume ou ΔpH/ΔV.</span>
+                  <span id="graph-export-status" class="export-card-status" role="status" aria-live="polite"></span>
+                  <span class="export-card-meta">O PNG é gerado em resolução 2×. Os arquivos usam a representação ativa: pH × volume ou ΔpH/ΔV.</span>
                 </article>
                 <article class="export-card">
                   <div class="export-card-icon" aria-hidden="true">▤</div>
